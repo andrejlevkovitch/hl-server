@@ -8,8 +8,6 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/value_semantic.hpp>
 #include <boost/program_options/variables_map.hpp>
-#include <boost/stacktrace/stacktrace.hpp>
-#include <csignal>
 #include <cstdlib>
 
 #define HOST_ARG       "host"
@@ -20,12 +18,17 @@
 #define DEFAULT_PORT           9173
 #define DEFAULT_LIMIT_SESSIONS 0
 
+#include <boost/stacktrace/stacktrace.hpp>
+#include <csignal>
 void sigsegv_handler([[maybe_unused]] int signal) {
+  // XXX note that backtrace printing right only if program compiled with -g
   boost::stacktrace::stacktrace trace{};
   LOG_FAILURE(boost::stacktrace::to_string(trace));
 }
 
 int main(int argc, char *argv[]) {
+  std::signal(SIGSEGV, sigsegv_handler);
+
   namespace po = boost::program_options;
 
   // parse args
