@@ -22,10 +22,11 @@ local function main()
 
   local request = cjson.encode{0, {
     id = 0,
-    buf_type = "tmp",
-    buf_name = "",
+    buf_type = "cpp",
+    buf_name = "a.cpp",
     buf_length = #input,
     buf_body = input,
+    additiona_info = "",
   }}
 
   local ok, err = sock:send(request)

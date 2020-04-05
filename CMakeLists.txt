@@ -11,6 +11,7 @@ add_subdirectory(third-party)
 
 find_package(Boost COMPONENTS program_options stacktrace_backtrace REQUIRED)
 find_package(Threads REQUIRED)
+find_package(Clang REQUIRED)
 
 set(PROJECT_SRC
   src/main.cpp
@@ -26,6 +27,7 @@ set(PROJECT_SRC
   src/hl/ResponseObject.cpp
 
   src/hl/tokenizer/TokenizerFactory.cpp
+  src/hl/tokenizer/CppTokenizer.cpp
   src/hl/tokenizer/PolyndromTokenizer.cpp
   )
 
@@ -36,9 +38,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   Threads::Threads
   ${Boost_LIBRARIES}
   nlohmann_json::nlohmann_json
+  libclang
+  stdc++fs
   )
 target_include_directories(${PROJECT_NAME} PRIVATE
   include
+  ${CLANG_INCLUDE_DIRS}
   )
 
 # needed for colorize logs int console
