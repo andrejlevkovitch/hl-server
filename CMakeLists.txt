@@ -7,6 +7,8 @@ project(hl_server)
 include(cmake/build.cmake)
 include(cmake/doxygen.cmake)
 
+add_subdirectory(third-party)
+
 find_package(Boost COMPONENTS program_options stacktrace_backtrace REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -33,6 +35,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   Boost::boost
   Threads::Threads
   ${Boost_LIBRARIES}
+  nlohmann_json::nlohmann_json
   )
 target_include_directories(${PROJECT_NAME} PRIVATE
   include
