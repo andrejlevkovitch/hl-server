@@ -7,6 +7,6 @@ if(NOT EXISTS Catch2)
   execute_process(COMMAND ${GIT_EXECUTABLE} submodule update)
 endif()
 
-set(JSON_BuildTests OFF)
-set(JSON_Install    OFF)
+option(JSON_BuildTests OFF)
+option(JSON_Install    OFF)
 add_subdirectory(json)
