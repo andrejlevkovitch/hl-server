@@ -9,9 +9,10 @@
  * fields are required):
  *
  *     - id            - client id as number from request
+ *     - buf_type      - type of buffer which was handle
  *     - buf_name      - name of buffer which was handle
  *     - return_code   - in success it is equal to 0
- *     - error_message - in case of success is empty
+ *     - error_message - just string with error
  *     - tokens_count  - count of match objects
  *     - tokens        - array of json objects with next signature:
  *       - group - token group
@@ -22,28 +23,30 @@
 
 #pragma once
 
+#include "hl/Token.hpp"
 #include "misc.hpp"
 #include <array>
 #include <list>
 #include <string>
 
-namespace hl {
-struct Token {
-  std::string           group;
-  std::array<size_t, 3> pos;
-};
+#define SUCCESS_CODE 0
+#define FAILURE_CODE 1
 
+#define NO_ERRORS ""
+
+namespace hl {
 struct ResponseObject final {
 public:
   /**\brief serialize the object to string
    */
   void dump(OUTPUT std::string &out) const noexcept;
 
-  int              msg_num;
-  int              id;
-  std::string      buf_name;
-  int              return_code;
-  std::string      error_message;
-  std::list<Token> tokens;
+  int         msg_num;
+  int         id;
+  std::string buf_type;
+  std::string buf_name;
+  int         return_code;
+  std::string error_message;
+  TokenList   tokens;
 };
 } // namespace hl

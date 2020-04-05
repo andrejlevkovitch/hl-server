@@ -1,10 +1,11 @@
+let g:hl_server_addr = "localhost:9173"
+
 func EchoCallback(ch, msg)
   echo a:msg
 endfunc
 
 func MissedMsgCallback(ch, msg)
   lexpr "missed message"
-  lwindow
 endfunc
 
 func ClearWinMatches(win_id)
@@ -18,12 +19,10 @@ endfunc
 
 func HighlightCallback(ch, msg)
   " check that request was processed properly
-  let l:return_code = a:msg.return_code
-  if l:return_code != 0
-    let l:error_message = a:msg.error_message
-    lexpr l:error_message
-    lwindow
-    return
+  if a:msg.return_code != 0
+    lexpr a:msg.error_message
+
+    " XXX even if we get fail, try highlight existed tokens
   endif
 
   let l:win_id = a:msg.id
@@ -41,17 +40,18 @@ func HighlightCallback(ch, msg)
   endfor
 endfunc
 
-func FormRequest(ch)
-  let l:buf_body =    join(getline(1, "$"), "\n")
+func SendHLRequest()
+  let l:buf_body = join(getline(1, "$"), "\n")
 
   let l:request = {} 
   let l:request["id"] =         win_getid()
+  let l:request["buf_type"] =   &filetype
   let l:request["buf_name"] =   buffer_name("%")
   let l:request["buf_length"] = len(l:buf_body)
   let l:request["buf_body"] =   l:buf_body
 
-  call ch_sendexpr(a:ch, l:request, {"callback": "HighlightCallback"})
+  call ch_sendexpr(g:hl_server_channel, l:request, {"callback": "HighlightCallback"})
 endfunc
 
 call ch_logfile("log")
-let channel = ch_open("localhost:9173", {"mode": "json", "callback": "MissedMsgCallback"})
+let g:hl_server_channel = ch_open(g:hl_server_addr, {"mode": "json", "callback": "MissedMsgCallback"})

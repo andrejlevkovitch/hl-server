@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 
 #define ID_TAG            "id"
+#define BUFFER_TYPE_TAG   "buf_type"
 #define BUFFER_NAME_TAG   "buf_name"
 #define BUFFER_LENGTH_TAG "buf_length"
 #define BUFFER_BODY_TAG   "buf_body"
@@ -34,6 +35,10 @@ RequestObject::RequestObject(std::string_view request) {
   if (info.contains(ID_TAG) == false || info[ID_TAG].is_number() == false) {
     LOG_THROW(std::invalid_argument, "invalid " ID_TAG);
   }
+  if (info.contains(BUFFER_TYPE_TAG) == false ||
+      info[BUFFER_TYPE_TAG].is_string() == false) {
+    LOG_THROW(std::invalid_argument, "invalid " BUFFER_TYPE_TAG);
+  }
   if (info.contains(BUFFER_NAME_TAG) == false ||
       info[BUFFER_NAME_TAG].is_string() == false) {
     LOG_THROW(std::invalid_argument, "invalid " BUFFER_NAME_TAG);
@@ -48,6 +53,7 @@ RequestObject::RequestObject(std::string_view request) {
   }
 
   id                = info[ID_TAG];
+  buf_type          = info[BUFFER_TYPE_TAG];
   buf_name          = info[BUFFER_NAME_TAG];
   size_t buf_length = info[BUFFER_LENGTH_TAG];
   buf_body          = info[BUFFER_BODY_TAG];

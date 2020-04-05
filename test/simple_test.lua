@@ -20,9 +20,9 @@ local function main()
 
   local input = io.read("*a")
 
-  local request = cjson.encode{0,
-                               {
+  local request = cjson.encode{0, {
     id = 0,
+    buf_type = "tmp",
     buf_name = "",
     buf_length = #input,
     buf_body = input,

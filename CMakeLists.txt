@@ -22,6 +22,9 @@ set(PROJECT_SRC
   src/hl/HandlerFactory.cpp
   src/hl/RequestObject.cpp
   src/hl/ResponseObject.cpp
+
+  src/hl/tokenizer/TokenizerFactory.cpp
+  src/hl/tokenizer/PolyndromTokenizer.cpp
   )
 
 add_executable(${PROJECT_NAME} ${PROJECT_SRC})

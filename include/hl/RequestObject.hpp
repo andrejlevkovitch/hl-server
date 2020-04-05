@@ -10,6 +10,7 @@
  *
  *   - id          - client id as number
  *   - buf_name    - name of buffer for handling
+ *   - buf_type    - type of buffer entity (for example `cpp`)
  *   - buf_length  - length of buffer
  *   - buf_body    - buffer body as plain text
  */
@@ -20,6 +21,8 @@
 namespace hl {
 struct RequestObject final {
 public:
+  RequestObject() noexcept = default;
+
   /**\brief deserialize json request
    *
    * \throw exception if can not deserialize the request
@@ -28,6 +31,7 @@ public:
 
   int         msg_num;
   int         id;
+  std::string buf_type;
   std::string buf_name;
   std::string buf_body;
 };

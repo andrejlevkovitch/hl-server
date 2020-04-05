@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 
 #define ID_TAG            "id"
+#define BUFFER_TYPE_TAG   "buffer_type"
 #define BUFFER_NAME_TAG   "buf_name"
 #define RETURN_CODE_TAG   "return_code"
 #define ERROR_MESSAGE_TAG "error_message"
@@ -31,6 +32,7 @@ void ResponseObject::dump(OUTPUT std::string &out) const noexcept {
   retval.push_back(msg_num);
   retval.push_back({
       {ID_TAG, id},
+      {BUFFER_TYPE_TAG, buf_type},
       {BUFFER_NAME_TAG, buf_name},
       {RETURN_CODE_TAG, return_code},
       {ERROR_MESSAGE_TAG, error_message},
