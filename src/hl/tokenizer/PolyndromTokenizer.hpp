@@ -9,8 +9,9 @@
 namespace hl::tokenizer {
 class PolyndromTokenizer final : public AbstractTokenizer {
 public:
-  error_code tokenize(std::string_view   bufName,
-                      const std::string &buffer,
-                      OUTPUT TokenList &tokens) noexcept override;
+  std::string tokenize(const std::string &bufName,
+                       const std::string &buffer,
+                       const std::string &additionalInfo,
+                       OUTPUT TokenList &tokens) noexcept override;
 };
 } // namespace hl::tokenizer

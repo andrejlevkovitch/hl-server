@@ -4,18 +4,19 @@
 
 #include "hl/Token.hpp"
 #include "misc.hpp"
-#include <boost/system/error_code.hpp>
 #include <string_view>
 
 namespace hl::tokenizer {
-using error_code = boost::system::error_code;
-
 class AbstractTokenizer {
 public:
   virtual ~AbstractTokenizer() = default;
 
-  virtual error_code tokenize(std::string_view   bufName,
-                              const std::string &buffer,
-                              OUTPUT TokenList &tokens) noexcept = 0;
+  /**\return it can return some string as error or warning, this string just
+   * will be added to error_message and tokens also will be passed
+   */
+  virtual std::string tokenize(const std::string &bufName,
+                               const std::string &buffer,
+                               const std::string &additionalInfo,
+                               OUTPUT TokenList &tokens) noexcept = 0;
 };
 } // namespace hl::tokenizer

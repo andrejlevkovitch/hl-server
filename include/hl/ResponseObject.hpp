@@ -8,15 +8,15 @@
  * 2. Second value in array must be an json object with next fields(all
  * fields are required):
  *
- *     - id            - client id as number from request
- *     - buf_type      - type of buffer which was handle
- *     - buf_name      - name of buffer which was handle
- *     - return_code   - in success it is equal to 0
- *     - error_message - just string with error
- *     - tokens_count  - count of match objects
- *     - tokens        - array of json objects with next signature:
- *       - group - token group
- *       - pos   - array of integes with 3 values: row, column, len
+ *     - id            - client id as number from request           (num)
+ *     - buf_type      - type of buffer which was handle            (string)
+ *     - buf_name      - name of buffer which was handle            (string)
+ *     - return_code   - in success it is equal to 0                (num)
+ *     - error_message - just string with error                     (string)
+ *     - tokens_count  - count of match objects                     (num)
+ *     - tokens        - array of json objects with next signature: (arr)
+ *       - group - token group                                      (string)
+ *       - pos   - array of integes with 3 values: row, column, len (arr)
  *
  * \note numeration of lines and columns start from 1
  */

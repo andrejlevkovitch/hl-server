@@ -46,32 +46,21 @@ ss::error_code RequestHandler::handle(std::string_view request,
     return returnCode;
   }
 
-  TokenList             tokens;
-  tokenizer::error_code status = tokenizer->tokenize(requestObject.buf_name,
-                                                     requestObject.buf_body,
-                                                     tokens);
-  if (status.failed()) {
-    LOG_WARNING("tokenizer failes");
-
-    // send error message for client
-    ResponseObject responseObject{requestObject.msg_num,
-                                  requestObject.id,
-                                  requestObject.buf_type,
-                                  requestObject.buf_name,
-                                  FAILURE_CODE,
-                                  "tokenizer failes",
-                                  tokens};
-    responseObject.dump(response);
-
-    return returnCode;
+  TokenList   tokens;
+  std::string status = tokenizer->tokenize(requestObject.buf_name,
+                                           requestObject.buf_body,
+                                           requestObject.additional_info,
+                                           tokens);
+  if (status.empty() == false) {
+    LOG_WARNING("tokenizer error: %1%", status);
   }
 
   ResponseObject responseObject{requestObject.msg_num,
                                 requestObject.id,
                                 requestObject.buf_type,
                                 requestObject.buf_name,
-                                SUCCESS_CODE,
-                                status.message(),
+                                status.empty() ? SUCCESS_CODE : FAILURE_CODE,
+                                status,
                                 std::move(tokens)};
   responseObject.dump(response);
 

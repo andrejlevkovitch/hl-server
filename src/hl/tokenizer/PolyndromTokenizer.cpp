@@ -11,9 +11,10 @@ bool is_polyndrom(std::string_view str) {
   return str == reverseString;
 }
 
-error_code
-PolyndromTokenizer::tokenize([[maybe_unused]] std::string_view bufName,
-                             const std::string &               buffer,
+std::string
+PolyndromTokenizer::tokenize([[maybe_unused]] const std::string &bufName,
+                             const std::string &                 buffer,
+                             [[maybe_unused]] const std::string &additionalInfo,
                              OUTPUT TokenList &tokens) noexcept {
   using LineList = std::list<std::string>;
 

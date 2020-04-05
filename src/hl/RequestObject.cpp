@@ -4,11 +4,12 @@
 #include "logs.hpp"
 #include <nlohmann/json.hpp>
 
-#define ID_TAG            "id"
-#define BUFFER_TYPE_TAG   "buf_type"
-#define BUFFER_NAME_TAG   "buf_name"
-#define BUFFER_LENGTH_TAG "buf_length"
-#define BUFFER_BODY_TAG   "buf_body"
+#define ID_TAG              "id"
+#define BUFFER_TYPE_TAG     "buf_type"
+#define BUFFER_NAME_TAG     "buf_name"
+#define BUFFER_LENGTH_TAG   "buf_length"
+#define BUFFER_BODY_TAG     "buf_body"
+#define ADDITIONAL_INFO_TAG "additional_info"
 
 namespace hl {
 RequestObject::RequestObject(std::string_view request) {
@@ -60,6 +61,11 @@ RequestObject::RequestObject(std::string_view request) {
 
   if (buf_length != buf_body.length()) {
     LOG_THROW(std::invalid_argument, "invalid value of " BUFFER_LENGTH_TAG);
+  }
+
+  if (info.contains(ADDITIONAL_INFO_TAG) == true &&
+      info[ADDITIONAL_INFO_TAG].is_string()) {
+    additional_info = info[ADDITIONAL_INFO_TAG];
   }
 }
 } // namespace hl
