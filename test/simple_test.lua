@@ -42,7 +42,7 @@ c++
     ]],
   }}
 
-  local ok, err = sock:send(request)
+  local ok, err = sock:send(request .. "\n")
   if not ok then
     error(err)
   end

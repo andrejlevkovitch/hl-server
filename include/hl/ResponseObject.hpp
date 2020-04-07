@@ -13,9 +13,9 @@
  *     - buf_name      - name of buffer which was handle            (string)
  *     - return_code   - in success it is equal to 0                (num)
  *     - error_message - just string with error                     (string)
- *     - tokens        - array of json objects with next signature: (arr)
- *       - group - token group                                      (string)
- *       - pos   - array of integes with 3 values: row, column, len (arr)
+ *     - tokens        - map where:                                 (map)
+ *       - key     - token group                                    (string)
+ *       - value   - array of token locations: row, column, len     (arr)
  *
  * \note numeration of lines and columns start from 1
  */

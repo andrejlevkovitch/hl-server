@@ -246,6 +246,16 @@ static std::string map_type_kind(CXTypeKind const typeKind) {
   case CXType_ObjCId:
   case CXType_ObjCClass:
   case CXType_ObjCSel:
+  case CXType_Float128:
+  case CXType_Half:
+  case CXType_Float16:
+  case CXType_ShortAccum:
+  case CXType_Accum:
+  case CXType_LongAccum:
+  case CXType_UShortAccum:
+  case CXType_UAccum:
+  case CXType_ULongAccum:
+
   case CXType_Complex:
   case CXType_Pointer:
   case CXType_BlockPointer:
@@ -273,6 +283,7 @@ static std::string map_type_kind(CXTypeKind const typeKind) {
   case CXType_FunctionProto:
     return "Function";
 
+  case CXType_Unexposed:
   default:
     return "";
   }

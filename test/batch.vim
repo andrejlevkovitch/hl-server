@@ -113,16 +113,17 @@ func HighlightCallback(ch, msg)
   call ClearWinMatches(l:win_id)
 
   " and add new heighligth
-  for l:item in a:msg.tokens
-    let l:group = l:item.group
-    let l:pos   = l:item.pos
+  for [l:hl_group, l:locations] in items(a:msg.tokens)
+    " We must be confident, that we have higlight for the group
+    if has_key(g:hl_group_to_hi_link, l:hl_group)
+      let l:hi_link = g:hl_group_to_hi_link[l:hl_group]
 
-    if has_key(g:hl_group_to_hi_link, l:group) == 1
-      let l:hi_link = g:hl_group_to_hi_link[l:group]
-      let l:match = matchaddpos(l:hi_link, [l:pos], 0, -1, {"window": l:win_id})
-      if l:match != -1 " otherwise invalid match
-        call add(w:matches, l:match)
-      endif
+      for l:location in l:locations
+        let l:match = matchaddpos(l:hi_link, [l:location], 0, -1, {"window": l:win_id})
+        if l:match != -1 " otherwise invalid match
+          call add(w:matches, l:match)
+        endif
+      endfor
     endif
   endfor
 endfunc

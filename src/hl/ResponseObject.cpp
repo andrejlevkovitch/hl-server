@@ -18,15 +18,10 @@ namespace hl {
 void ResponseObject::dump(OUTPUT std::string &out) const noexcept {
   using json = nlohmann::json;
 
-  json serializedTokens = json::array();
-  std::transform(tokens.begin(),
-                 tokens.end(),
-                 std::back_inserter(serializedTokens),
-                 [](const Token token) {
-                   json serializedToken = {{TOKEN_GROUP_TAG, token.group},
-                                           {TOKEN_POS_TAG, token.pos}};
-                   return serializedToken;
-                 });
+  json serializedTokens = json();
+  for (const auto &[group, pos] : tokens) {
+    serializedTokens[group].emplace_back(pos);
+  }
 
   json retval = json::array();
   retval.push_back(msg_num);
