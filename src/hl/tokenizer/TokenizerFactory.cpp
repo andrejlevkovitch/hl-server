@@ -5,12 +5,13 @@
 #include "PolyndromTokenizer.hpp"
 
 #define CPP_BUFFER_TYPE "cpp"
+#define C_BUFFER_TYPE   "c"
 
 #define POLYNDROM_BUFFER_TYPE "polyndrom"
 
 namespace hl::tokenizer {
 Tokenizer TokenizerFactory::getTokenizer(std::string_view bufferType) noexcept {
-  if (bufferType == CPP_BUFFER_TYPE) {
+  if (bufferType == CPP_BUFFER_TYPE || bufferType == C_BUFFER_TYPE) {
     return std::make_unique<CppTokenizer>();
   } else if (bufferType == POLYNDROM_BUFFER_TYPE) {
     return std::make_unique<PolyndromTokenizer>();
