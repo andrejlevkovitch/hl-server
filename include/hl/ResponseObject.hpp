@@ -13,7 +13,6 @@
  *     - buf_name      - name of buffer which was handle            (string)
  *     - return_code   - in success it is equal to 0                (num)
  *     - error_message - just string with error                     (string)
- *     - tokens_count  - count of match objects                     (num)
  *     - tokens        - array of json objects with next signature: (arr)
  *       - group - token group                                      (string)
  *       - pos   - array of integes with 3 values: row, column, len (arr)

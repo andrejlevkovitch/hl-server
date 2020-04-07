@@ -11,7 +11,6 @@
  *   - id              - client id as number                    (num)
  *   - buf_name        - name of buffer for handling            (string)
  *   - buf_type        - type of buffer entity (f.e. `cpp`)     (string)
- *   - buf_length      - length of buffer                       (num)
  *   - buf_body        - buffer body as plain text              (string)
  *   - additional_info - some information needed for tokenizer  (string)
  */

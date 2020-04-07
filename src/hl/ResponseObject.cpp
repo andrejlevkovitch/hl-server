@@ -36,7 +36,6 @@ void ResponseObject::dump(OUTPUT std::string &out) const noexcept {
       {BUFFER_NAME_TAG, buf_name},
       {RETURN_CODE_TAG, return_code},
       {ERROR_MESSAGE_TAG, error_message},
-      {TOKENS_COUNT_TAG, tokens.size()},
       {TOKENS_TAG, serializedTokens},
   });
 

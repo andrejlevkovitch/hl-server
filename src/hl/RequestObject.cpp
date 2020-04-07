@@ -7,7 +7,6 @@
 #define ID_TAG              "id"
 #define BUFFER_TYPE_TAG     "buf_type"
 #define BUFFER_NAME_TAG     "buf_name"
-#define BUFFER_LENGTH_TAG   "buf_length"
 #define BUFFER_BODY_TAG     "buf_body"
 #define ADDITIONAL_INFO_TAG "additional_info"
 
@@ -44,28 +43,19 @@ RequestObject::RequestObject(std::string_view request) {
       info[BUFFER_NAME_TAG].is_string() == false) {
     LOG_THROW(std::invalid_argument, "invalid " BUFFER_NAME_TAG);
   }
-  if (info.contains(BUFFER_LENGTH_TAG) == false ||
-      info[BUFFER_LENGTH_TAG].is_number() == false) {
-    LOG_THROW(std::invalid_argument, "invalid " BUFFER_LENGTH_TAG);
-  }
   if (info.contains(BUFFER_BODY_TAG) == false ||
       info[BUFFER_BODY_TAG].is_string() == false) {
     LOG_THROW(std::invalid_argument, "invalid " BUFFER_BODY_TAG);
   }
-
-  id                = info[ID_TAG];
-  buf_type          = info[BUFFER_TYPE_TAG];
-  buf_name          = info[BUFFER_NAME_TAG];
-  size_t buf_length = info[BUFFER_LENGTH_TAG];
-  buf_body          = info[BUFFER_BODY_TAG];
-
-  if (buf_length != buf_body.length()) {
-    LOG_THROW(std::invalid_argument, "invalid value of " BUFFER_LENGTH_TAG);
+  if (info.contains(ADDITIONAL_INFO_TAG) == false ||
+      info[ADDITIONAL_INFO_TAG].is_string() == false) {
+    LOG_THROW(std::invalid_argument, "invalid" ADDITIONAL_INFO_TAG);
   }
 
-  if (info.contains(ADDITIONAL_INFO_TAG) == true &&
-      info[ADDITIONAL_INFO_TAG].is_string()) {
-    additional_info = info[ADDITIONAL_INFO_TAG];
-  }
+  id              = info[ID_TAG];
+  buf_type        = info[BUFFER_TYPE_TAG];
+  buf_name        = info[BUFFER_NAME_TAG];
+  buf_body        = info[BUFFER_BODY_TAG];
+  additional_info = info[ADDITIONAL_INFO_TAG];
 }
 } // namespace hl
