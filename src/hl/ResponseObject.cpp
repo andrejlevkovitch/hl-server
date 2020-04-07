@@ -18,7 +18,7 @@ namespace hl {
 void ResponseObject::dump(OUTPUT std::string &out) const noexcept {
   using json = nlohmann::json;
 
-  json serializedTokens = json();
+  json serializedTokens = json::object();
   for (const auto &[group, pos] : tokens) {
     serializedTokens[group].emplace_back(pos);
   }

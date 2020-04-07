@@ -29,6 +29,8 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
                                    const std::string &buffer,
                                    const std::string &compileFlags,
                                    OUTPUT TokenList &tokens) noexcept {
+  size_t bufLen = buffer.size();
+
   // clang diagnostic works only with files, so we need temporary file
   std::filesystem::path tmpDir = std::filesystem::temp_directory_path();
 
@@ -151,11 +153,24 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
       CXCursor &       cursor         = cursors[i];
       CXSourceLocation cursorLocation = clang_getCursorLocation(cursor);
 
-      unsigned int row = 0;
-      unsigned int col = 0;
-      clang_getFileLocation(cursorLocation, nullptr, &row, &col, nullptr);
-      CXString     cursorSpelling = clang_getCursorSpelling(cursor);
-      unsigned int size = std::strlen(clang_getCString(cursorSpelling));
+      unsigned int row    = 0;
+      unsigned int col    = 0;
+      unsigned int len    = 0;
+      unsigned int offset = 0;
+      clang_getFileLocation(cursorLocation, nullptr, &row, &col, &offset);
+
+      // also we need get len of current token
+      if (offset < bufLen) {
+        // for get length of current token we need find it in buffer and get
+        // length of the word
+        std::regex                 wordReg{R"(\w+)"};
+        std::sregex_token_iterator wordIter{buffer.begin() + offset,
+                                            buffer.end(),
+                                            wordReg};
+        if (wordIter != std::sregex_token_iterator{}) {
+          len = wordIter->str().size();
+        } // else situation are impassible
+      }
 
       CXTypeKind   typeKind   = clang_getCursorType(cursor).kind;
       CXCursorKind cursorKind = clang_getCursorKind(cursor);
@@ -163,10 +178,8 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
       std::string group = map_cursor_kind(cursorKind, typeKind);
 
       if (group.empty() == false) {
-        tokens.emplace_back(Token{group, {row, col, size}});
+        tokens.emplace_back(Token{group, {row, col, len}});
       }
-
-      clang_disposeString(cursorSpelling);
     }
 
     clang_disposeTokens(translationUnit, cxTokens, numTokens);
