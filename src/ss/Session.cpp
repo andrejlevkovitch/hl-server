@@ -5,6 +5,7 @@
 #include "ss/Context.hpp"
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/read.hpp>
+#include <boost/asio/read_until.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/yield.hpp>
 
@@ -63,14 +64,14 @@ private:
     if (error.failed() == false) {
       reenter(this) {
         for (;;) {
-          yield asio::async_read(sock_,
-                                 asio::dynamic_buffer(req_),
-                                 asio::transfer_at_least(1),
-                                 std::bind(&SessionImp::operator(),
-                                           this,
-                                           std::move(self),
-                                           std::placeholders::_1,
-                                           std::placeholders::_2));
+          yield asio::async_read_until(sock_,
+                                       asio::dynamic_buffer(req_),
+                                       '\n',
+                                       std::bind(&SessionImp::operator(),
+                                                 this,
+                                                 std::move(self),
+                                                 std::placeholders::_1,
+                                                 std::placeholders::_2));
 
           LOG_INFO("readed: %1.3fKb", transfered / 1024.);
 
