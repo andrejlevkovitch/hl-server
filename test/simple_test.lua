@@ -26,7 +26,20 @@ local function main()
     buf_name = "a.cpp",
     buf_length = #input,
     buf_body = input,
-    additiona_info = "",
+    additional_info = [[
+-x
+c++
+-I/home/levkovitch/Public/git/hl/include
+-I/home/levkovitch/Public/git/hl/third-party/json/single_include
+-I/usr/lib/llvm-9/include
+-Wall
+-Wextra
+-Wnon-virtual-dtor
+-Wshadow
+-std=gnu++17
+-I/home/levkovitch/Public/git/hl/build
+-I/home/levkovitch/Public/git/hl/src/hl/tokenizer/
+    ]],
   }}
 
   local ok, err = sock:send(request)
