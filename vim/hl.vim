@@ -1,6 +1,6 @@
 let g:hl_server_addr = "localhost:9173"
-
 let g:hl_supported_types = ["cpp", "c"]
+let g:hl_last_error = ""
 
 let g:hl_group_to_hi_link = {
       \ "Namespace"                           : "Namespace",
@@ -46,7 +46,6 @@ let g:hl_group_to_hi_link = {
       \ "ParmDecl"                            : "Variable",
       \ "VariableRef"                         : "Variable",
       \ "NonTypeTemplateParameter"            : "Variable",
-      \ "DeclRefExpr"                         : "Variable",
       \ 
       \ "MacroDefinition"                     : "Macro",
       \ "MacroInstantiation"                  : "Macro",
@@ -82,35 +81,46 @@ let g:hl_group_to_hi_link = {
       \ "ObjCCategoryImplDecl"                : "Normal",
       \}
 
-func EchoCallback(ch, msg)
-  echo a:msg
+
+" Connect to hl_server
+let g:hl_server_channel = ch_open(g:hl_server_addr, {"mode": "json", "callback": "hl#MissedMsgCallback"})
+
+func hl#TryConnect()
+  if ch_status(g:hl_server_channel) != "open"
+    let g:hl_server_channel = ch_open(g:hl_server_addr, {"mode": "json", "callback": "hl#MissedMsgCallback"})
+  endif
 endfunc
 
-func MissedMsgCallback(ch, msg)
-  echo "missed message"
-endfunc
 
-func ClearWinMatches(win_id)
+func hl#ClearWinMatches(win_id)
   if exists("w:matches")
     for l:match in w:matches
       call matchdelete(l:match, a:win_id)
     endfor
   endif
+
   let w:matches = []
 endfunc
 
-func HighlightCallback(ch, msg)
+
+func hl#MissedMsgCallback(channel, msg)
+  let g:hl_last_error = "missed message"
+endfunc
+
+func hl#HighlightCallback(channel, msg)
   " check that request was processed properly
   if a:msg.return_code != 0
-    echo a:msg.error_message
+    let g:hl_last_error = a:msg.error_message
 
-    " XXX even if we get fail, try highlight existed tokens
+    if empty(a:msg.tokens) == 1
+      return
+    end " otherwise try add highlight
   endif
 
   let l:win_id = a:msg.id
 
   " at first clear all matches
-  call ClearWinMatches(l:win_id)
+  call hl#ClearWinMatches(l:win_id)
 
   " and add new heighligth
   for [l:hl_group, l:locations] in items(a:msg.tokens)
@@ -129,7 +139,7 @@ func HighlightCallback(ch, msg)
 endfunc
 
 " return flags for current buffer as list
-func GetCompilationFlags()
+func hl#GetCompilationFlags()
   let l:config_file = findfile(".color_coded", ".;")
   if empty(l:config_file) == 0
     let l:flags = readfile(l:config_file)
@@ -141,12 +151,12 @@ func GetCompilationFlags()
   return []
 endfunc
 
-func SendHLRequest()
+func hl#SendRequest()
   let l:buf_type = &filetype
-  if count(g:hl_supported_types, l:buf_type) != 0
+  if count(g:hl_supported_types, l:buf_type) != 0 && ch_status(g:hl_server_channel) == "open"
     let l:buf_body = join(getline(1, "$"), "\n")
 
-    let l:compile_flags = GetCompilationFlags()
+    let l:compile_flags = hl#GetCompilationFlags()
 
     let l:request = {} 
     let l:request["id"] =         win_getid()
@@ -155,88 +165,29 @@ func SendHLRequest()
     let l:request["buf_body"] =   l:buf_body
     let l:request["additional_info"] = join(l:compile_flags, "\n")
 
-    call ch_sendexpr(g:hl_server_channel, l:request, {"callback": "HighlightCallback"})
+    call ch_sendexpr(g:hl_server_channel, l:request, {"callback": "hl#HighlightCallback"})
   endif
 endfunc
 
-call ch_logfile("log")
-let g:hl_server_channel = ch_open(g:hl_server_addr, {"mode": "json", "callback": "MissedMsgCallback"})
+func hl#TryForNewWindow()
+  call hl#TryConnect()
+
+  let l:win_id = win_getid()
+  call hl#ClearWinMatches(l:win_id)
+  call hl#SendRequest()
+endfunc
 
 
-" Vim global plugin for semantic highlighting using libclang
-" Maintainer: Jeaye <contact@jeaye.com>
+augroup hl_callbacks
+  au BufWinEnter *            call hl#TryForNewWindow()
 
-" LightStell color
-hi default Member cterm=NONE ctermfg=147
-hi default Variable cterm=NONE ctermfg=white
-hi default EnumConstant cterm=NONE ctermfg=DarkGreen
-hi default Namespace cterm=bold ctermfg=46
+  au InsertLeave *            call hl#SendRequest()
+  au TextChanged *            call hl#SendRequest()
+augroup END
 
-hi link StructDecl Type
-hi link UnionDecl Type
-hi link ClassDecl Type
-hi link EnumDecl Type
-hi link FieldDecl Member
-hi link EnumConstantDecl EnumConstant
-hi link FunctionDecl Function
-hi link VarDecl Variable
-hi link ParmDecl Variable
-hi link ObjCInterfaceDecl Normal
-hi link ObjCCategoryDecl Normal
-hi link ObjCProtocolDecl Normal
-hi link ObjCPropertyDecl Normal
-hi link ObjCIvarDecl Normal
-hi link ObjCInstanceMethodDecl Member
-hi link ObjCClassMethodDecl Member
-hi link ObjCImplementationDecl Normal
-hi link ObjCCategoryImplDecl Normal
-hi link TypedefDecl Type
-hi link CXXMethod Member
-hi link Namespace Namespace
-hi link LinkageSpec Normal
-hi link Constructor Function
-hi link Destructor Function
-hi link ConversionFunction Function
-hi link TemplateTypeParameter Type
-hi link NonTypeTemplateParameter Variable
-hi link TemplateTemplateParameter Type
-hi link FunctionTemplate Function
-hi link ClassTemplate Type
-hi link ClassTemplatePartialSpecialization Type
-hi link NamespaceAlias Namespace
-hi link UsingDirective Type
-hi link UsingDeclaration Type
-hi link TypeAliasDecl Type
-hi link ObjCSynthesizeDecl Normal
-hi link ObjCDynamicDecl Normal
-hi link CXXAccessSpecifier Label
-hi link ObjCSuperClassRef Normal
-hi link ObjCProtocolRef Normal
-hi link ObjCClassRef Normal
-hi link TypeRef Type
-hi link CXXBaseSpecifier Type
-hi link TemplateRef Type
-hi link NamespaceRef Namespace
-hi link MemberRef Member
-hi link LabelRef Label
-hi link OverloadedDeclRef Function
-hi link VariableRef Variable
-hi link FirstInvalid Normal
-hi link InvalidFile Error
-hi link NoDeclFound Error
-hi link NotImplemented Normal
-hi link InvalidCode Error
-hi link FirstExpr Normal
-hi link DeclRefExpr Variable
-hi link MemberRefExpr Member
-hi link CallExpr Function
-hi link ObjCMessageExpr Normal
-hi link BlockExpr Normal
-hi link MacroDefinition Macro
-hi link MacroInstantiation Macro
-hi link IntegerLiteral Number
-hi link FloatingLiteral Float
-hi link ImaginaryLiteral Number
-hi link StringLiteral String
-hi link CharacterLiteral Character
-hi link Punctuation Normal
+
+" colors
+hi default Member         cterm=NONE ctermfg=147
+hi default Variable       cterm=NONE ctermfg=white
+hi default EnumConstant   cterm=NONE ctermfg=DarkGreen
+hi default Namespace      cterm=bold ctermfg=46
