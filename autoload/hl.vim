@@ -118,6 +118,9 @@ func hl#HighlightCallback(channel, msg)
   endif
 
   let l:win_id = a:msg.id
+  if win_getid() != l:win_id
+    return
+  endif
 
   " at first clear all matches
   call hl#ClearWinMatches(l:win_id)
@@ -174,16 +177,9 @@ func hl#TryForNewWindow()
 
   let l:win_id = win_getid()
   call hl#ClearWinMatches(l:win_id)
+
   call hl#SendRequest()
 endfunc
-
-
-augroup hl_callbacks
-  au BufWinEnter *            call hl#TryForNewWindow()
-
-  au InsertLeave *            call hl#SendRequest()
-  au TextChanged *            call hl#SendRequest()
-augroup END
 
 
 " colors
