@@ -4,6 +4,7 @@
 #pragma once
 
 const char *defaultFlags[] = {
+    "-fPIC",
     "-isystem${LLVM_INSTALL_PREFIX}/include",
     "-isystem${LLVM_INSTALL_PREFIX}/include/c++/v1",
     "-isystem${LLVM_INSTALL_PREFIX}/lib/clang/${LLVM_PACKAGE_VERSION}/include",
