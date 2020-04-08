@@ -8,9 +8,13 @@
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/yield.hpp>
+#include <iterator>
+#include <regex>
 
 #define REQUEST_BUFFER_RESERVED  1024 * 1000 // 1Mb
 #define RESPONSE_BUFFER_RESERVED 1024 * 1000
+
+#define DATA_DELIMITER '\n'
 
 namespace ss {
 class SessionImp : public asio::coroutine {
@@ -66,7 +70,7 @@ private:
         for (;;) {
           yield asio::async_read_until(sock_,
                                        asio::dynamic_buffer(req_),
-                                       '\n',
+                                       DATA_DELIMITER,
                                        std::bind(&SessionImp::operator(),
                                                  this,
                                                  std::move(self),
@@ -91,11 +95,23 @@ private:
               break;
             }
 
-            error_code err = handler->handle(req_, res_);
-            if (err.failed()) {
-              LOG_ERROR(err.message());
-              close();
-              break;
+            // XXX after reading buffer can contains some extra data, so we must
+            // split the buffer by delimiter
+            std::regex regByDelim{DATA_DELIMITER};
+            for (std::sregex_token_iterator iter{req_.begin(),
+                                                 req_.end(),
+                                                 regByDelim,
+                                                 -1};
+                 iter != std::sregex_token_iterator{};
+                 ++iter) {
+              error_code err = handler->handle(iter->str(), res_);
+              if (err.failed()) {
+                LOG_ERROR(err.message());
+                close();
+                break;
+              }
+
+              res_ += DATA_DELIMITER;
             }
 
             if (res_.empty()) {

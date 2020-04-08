@@ -16,6 +16,10 @@ public:
 
   /**\note in case of error (if return == fail) connection will closed
    *
+   * \note response can contains data from previous handling, which was not be
+   * send. This happens when server get several request per one time. So be
+   * careful, don't clear it - all data must be send to caller
+   *
    * \warning if response is empty it handles as error: socket will be closed
    */
   virtual error_code handle(std::string_view reqest,

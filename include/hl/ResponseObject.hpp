@@ -38,7 +38,7 @@ struct ResponseObject final {
 public:
   /**\brief serialize the object to string
    */
-  void dump(OUTPUT std::string &out) const noexcept;
+  std::string dump() const noexcept;
 
   int         msg_num;
   int         id;

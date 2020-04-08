@@ -8,10 +8,20 @@
 #include <exception>
 
 namespace hl {
+static void writeResponse(const ResponseObject &responseObject,
+                          OUTPUT std::string &response) noexcept {
+  std::string serializedResponse = responseObject.dump();
+
+  std::copy(serializedResponse.begin(),
+            serializedResponse.end(),
+            std::back_inserter(response));
+}
+
 ss::error_code RequestHandler::handle(std::string_view request,
                                       OUTPUT std::string &response) noexcept {
-  ss::error_code returnCode;
+  ss::error_code returnCode; // always ok
 
+  std::string   serializedResponse;
   RequestObject requestObject;
 
   try {
@@ -21,8 +31,7 @@ ss::error_code RequestHandler::handle(std::string_view request,
 
     // send error message for client
     ResponseObject responseObject{0, 0, "", "", FAILURE_CODE, e.what(), {}};
-    responseObject.dump(response);
-
+    writeResponse(responseObject, response);
     return returnCode;
   }
 
@@ -41,8 +50,7 @@ ss::error_code RequestHandler::handle(std::string_view request,
                                   "couldn't get tokenizer for buffer type: " +
                                       requestObject.buf_type,
                                   {}};
-    responseObject.dump(response);
-
+    writeResponse(responseObject, response);
     return returnCode;
   }
 
@@ -62,8 +70,7 @@ ss::error_code RequestHandler::handle(std::string_view request,
                                 status.empty() ? SUCCESS_CODE : FAILURE_CODE,
                                 status,
                                 std::move(tokens)};
-  responseObject.dump(response);
-
+  writeResponse(responseObject, response);
   return returnCode;
 }
 } // namespace hl

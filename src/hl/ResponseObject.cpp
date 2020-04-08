@@ -15,7 +15,7 @@
 #define TOKEN_POS_TAG   "pos"
 
 namespace hl {
-void ResponseObject::dump(OUTPUT std::string &out) const noexcept {
+std::string ResponseObject::dump() const noexcept {
   using json = nlohmann::json;
 
   json serializedTokens = json::object();
@@ -34,7 +34,7 @@ void ResponseObject::dump(OUTPUT std::string &out) const noexcept {
       {TOKENS_TAG, serializedTokens},
   });
 
-  std::string serialized = retval.dump() + '\n';
-  std::copy(serialized.begin(), serialized.end(), std::back_inserter(out));
+  std::string serialized = retval.dump();
+  return serialized;
 }
 } // namespace hl
