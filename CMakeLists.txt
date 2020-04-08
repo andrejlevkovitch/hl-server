@@ -2,7 +2,7 @@
 
 cmake_minimum_required(VERSION 3.12)
 
-project(hl_server)
+project(hl-server)
 
 include(cmake/build.cmake)
 include(cmake/doxygen.cmake)
