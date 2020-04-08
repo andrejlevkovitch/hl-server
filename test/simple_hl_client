@@ -1,8 +1,10 @@
--- echo_test.lua
--- @script server test
+#!/bin/lua
+
+-- @script simple client for hls-server (cpp)
 --
--- @usage set host and port as first and second arguments. After start put some text in input and get result in standard
--- output
+-- @usage you need set host, port and name offile with additional information for request (compile flags). They must
+-- be a set as script flags in right order (last parameter not required, so if not set will be set empty string). All
+-- buffer data must be put in standard input
 --
 local socket_factory = require("socket")
 local cjson = require("cjson")
@@ -10,9 +12,17 @@ local cjson = require("cjson")
 local function main()
   local host = arg[1]
   local port = arg[2]
+  local additional_info_filename = arg[3]
 
   if host == nil or port == nil then
     error("you must set host as first argument and port as second")
+  end
+
+  local additional_info = ""
+  if additional_info_filename ~= nil then
+    local file = io.open(additional_info_filename, "r")
+    additional_info = file:read("*a")
+    file:close()
   end
 
   local sock = socket_factory.tcp()
@@ -26,20 +36,7 @@ local function main()
     buf_name = "a.cpp",
     buf_length = #input,
     buf_body = input,
-    additional_info = [[
--x
-c++
--I/home/levkovitch/Public/git/hl/include
--I/home/levkovitch/Public/git/hl/third-party/json/single_include
--I/usr/lib/llvm-9/include
--Wall
--Wextra
--Wnon-virtual-dtor
--Wshadow
--std=gnu++17
--I/home/levkovitch/Public/git/hl/build
--I/home/levkovitch/Public/git/hl/src/hl/tokenizer/
-    ]],
+    additional_info = additional_info,
   }}
 
   local ok, err = sock:send(request .. "\n")
