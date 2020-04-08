@@ -1,3 +1,3 @@
-# HighLigth
+# hl-server
 
-C++ syntax highlight server for Vim
+Fast asynchronous server for buffers tokenizing
