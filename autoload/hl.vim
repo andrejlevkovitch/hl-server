@@ -23,20 +23,20 @@ let g:hl_group_to_hi_link = {
       \ "TemplateRef"                         : "Type",
       \ "TypeRef"                             : "Type",
       \ 
+      \ "CXXConstructor"                      : "Function",
+      \ "CXXDestructor"                       : "Function",
       \ "Function"                            : "Function",
       \ "FunctionDecl"                        : "Function",
-      \ "OverloadedDeclRef"                   : "Function",
-      \ "CallExpr"                            : "Function",
-      \ "Constructor"                         : "Function",
-      \ "Destructor"                          : "Function",
-      \ "ConversionFunction"                  : "Function",
       \ "FunctionTemplate"                    : "Function",
+      \ "OverloadedDeclRef"                   : "Function",
+      \ "ConversionFunction"                  : "Function",
+      \ "CallExpr"                            : "Function",
       \ 
       \ "Member"                              : "Member",
-      \ "FieldDecl"                           : "Member",
-      \ "CXXMethod"                           : "Member",
-      \ "MemberRefExpr"                       : "Member",
       \ "MemberRef"                           : "Member",
+      \ "MemberRefExpr"                       : "Member",
+      \ "CXXMethod"                           : "Member",
+      \ "FieldDecl"                           : "Member",
       \ 
       \ "EnumConstant"                        : "EnumConstant",
       \ "EnumConstantDecl"                    : "EnumConstant",
@@ -127,10 +127,14 @@ func hl#HighlightCallback(channel, msg)
 
   " and add new heighligth
   for [l:hl_group, l:locations] in items(a:msg.tokens)
-    " We must be confident, that we have higlight for the group
+    " XXX We must be confident, that we have higlight for the group
+
+    let l:hi_link = "" " for debug you can set some value here, for example Label
     if has_key(g:hl_group_to_hi_link, l:hl_group)
       let l:hi_link = g:hl_group_to_hi_link[l:hl_group]
+    endif
 
+    if empty(l:hi_link) == 0
       for l:location in l:locations
         let l:match = matchaddpos(l:hi_link, [l:location], 0, -1, {"window": l:win_id})
         if l:match != -1 " otherwise invalid match
@@ -154,31 +158,31 @@ func hl#GetCompilationFlags()
   return []
 endfunc
 
-func hl#SendRequest()
-  let l:buf_type = &filetype
-  if count(g:hl_supported_types, l:buf_type) != 0 && ch_status(g:hl_server_channel) == "open"
-    let l:buf_body = join(getline(1, "$"), "\n")
+func hl#SendRequest(win_id, buf_type)
+  let l:buf_body = join(getline(1, "$"), "\n")
 
-    let l:compile_flags = hl#GetCompilationFlags()
+  let l:compile_flags = hl#GetCompilationFlags()
 
-    let l:request = {} 
-    let l:request["id"] =         win_getid()
-    let l:request["buf_type"] =   l:buf_type
-    let l:request["buf_name"] =   buffer_name("%")
-    let l:request["buf_body"] =   l:buf_body
-    let l:request["additional_info"] = join(l:compile_flags, "\n")
+  let l:request = {} 
+  let l:request["id"] =         a:win_id
+  let l:request["buf_type"] =   a:buf_type
+  let l:request["buf_name"] =   buffer_name("%")
+  let l:request["buf_body"] =   l:buf_body
+  let l:request["additional_info"] = join(l:compile_flags, "\n")
 
-    call ch_sendexpr(g:hl_server_channel, l:request, {"callback": "hl#HighlightCallback"})
-  endif
+  call ch_sendexpr(g:hl_server_channel, l:request, {"callback": "hl#HighlightCallback"})
 endfunc
 
-func hl#TryForNewWindow()
-  call hl#TryConnect()
-
+func hl#TrySendRequestForThisBuffer()
   let l:win_id = win_getid()
-  call hl#ClearWinMatches(l:win_id)
+  let l:buf_type = &filetype
 
-  call hl#SendRequest()
+  call hl#TryConnect()
+  if count(g:hl_supported_types, l:buf_type) != 0 && ch_status(g:hl_server_channel) == "open"
+    call hl#SendRequest(l:win_id, l:buf_type)
+  else
+    call hl#ClearWinMatches(l:win_id)
+  endif
 endfunc
 
 
