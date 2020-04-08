@@ -13,6 +13,10 @@ public:
   explicit Server(unsigned int maxSessionCount) noexcept;
   ~Server() noexcept;
 
+  /**\brief start server for processing
+   *
+   * \note it does not start io_context obejt! You must start it manually
+   */
   void run(std::string_view host, unsigned int port) noexcept;
 
 private:

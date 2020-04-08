@@ -62,20 +62,18 @@ public:
   void run(std::shared_ptr<ServerImp> self,
            std::string_view           host,
            unsigned int               port) noexcept {
-    error_code    error;
+    error_code    resolveError;
     tcp::resolver resolver{Context::ioContext()};
     auto          resolvIter =
-        resolver.resolve(tcp::v4(), host, std::to_string(port), error);
-    if (error.failed()) {
-      LOG_FAILURE(error.message());
+        resolver.resolve(tcp::v4(), host, std::to_string(port), resolveError);
+    if (resolveError.failed()) {
+      LOG_FAILURE(resolveError.message());
     }
 
     endpoint_ = resolvIter->endpoint();
     LOG_DEBUG("listening endpoint: %1%", endpoint_);
 
     this->startAccepting(std::move(self));
-
-    Context::ioContext().run();
   }
 
 private:

@@ -5,16 +5,18 @@
 #include <thread>
 
 namespace ss {
+static int            numberOfThreads = 1;
 static HandlerFactory staticHandlerFactory;
 
-void Context::init() noexcept {
-  // initialize asio io_context and mongo instance (they initialize at first
-  // call)
+void Context::init(int num) noexcept {
+  // XXX context initializes at first call, so we need set number of
+  // threads before calling ioContext method
+  numberOfThreads = num;
   ioContext();
 }
 
 asio::io_context &Context::ioContext() noexcept {
-  static asio::io_context context;
+  static asio::io_context context{numberOfThreads};
   return context;
 }
 

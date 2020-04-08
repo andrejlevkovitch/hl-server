@@ -14,8 +14,10 @@ using HandlerFactory = std::unique_ptr<AbstractHandlerFactory>;
 class Context {
 public:
   /**\brief you must call this function at first for initialize global context
+   *
+   * \param num number of threads for context initializing
    */
-  static void init() noexcept;
+  static void init(int num) noexcept;
 
   static asio::io_context &ioContext() noexcept;
 
