@@ -17,13 +17,18 @@
 #define DATA_DELIMITER '\n'
 
 namespace ss {
+using Connection = boost::signals2::connection;
+
 class SessionImp : public asio::coroutine {
 public:
-  SessionImp(tcp::socket sock, CloseSignal &atClose) noexcept
-      : sock_{std::move(sock)}
-      , atClose_{atClose} {
+  SessionImp(tcp::socket sock, CloseSignal &mainClose) noexcept
+      : sock_{std::move(sock)} {
     req_.reserve(REQUEST_BUFFER_RESERVED);
     res_.reserve(RESPONSE_BUFFER_RESERVED);
+
+    closeConnection = this->atClose_.connect([&mainClose]() {
+      mainClose();
+    });
   }
 
   /**\param self shared ptr to the SessionImp. We start some asynchronous
@@ -59,6 +64,7 @@ public:
 
     // emit signal about closing session
     atClose_();
+    closeConnection.disconnect();
   }
 
 private:
@@ -146,12 +152,15 @@ private:
     }
   }
 
+public:
+  Connection closeConnection;
+
 private:
   tcp::socket sock_;
   std::string req_;
   std::string res_;
 
-  CloseSignal &atClose_;
+  CloseSignal atClose_;
 };
 
 Session::Session(tcp::socket sock) noexcept
@@ -160,6 +169,8 @@ Session::Session(tcp::socket sock) noexcept
 }
 
 Session::~Session() noexcept {
+  imp_->closeConnection.disconnect();
+
   LOG_DEBUG("session closed");
 }
 
