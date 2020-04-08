@@ -18,7 +18,6 @@ RequestObject::RequestObject(std::string_view request) {
   json msg = json::parse(request, nullptr, false);
   if (msg == json::value_t::discarded || msg.is_array() == false ||
       msg.size() != 2) {
-    LOG_ERROR("\n%1%", request);
     LOG_THROW(std::invalid_argument,
               "invalid request, request must be encoded json array");
   }
