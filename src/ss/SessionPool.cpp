@@ -22,8 +22,10 @@ class SessionPoolImp {
       std::tuple<std::unique_ptr<Session>, signals::connection>>;
 
 public:
-  SessionPoolImp(SessionCloseSignal &atSessionCloseSig)
-      : atSessionClose{atSessionCloseSig} {
+  SessionPoolImp(SessionCloseSignal &atSessionCloseSig) {
+    atSessionClose_.connect([&atSessionCloseSig]() {
+      atSessionCloseSig();
+    });
   }
 
   /**\return in case of some error return default uuid{00..}
@@ -72,7 +74,7 @@ public:
       LOG_DEBUG("remove session: %1%", uuid);
       LOG_DEBUG("now opened:     %1%", sessions_.size());
 
-      atSessionClose();
+      atSessionClose_();
     } else {
       LOG_ERROR("try remove not existing session: %1%", uuid);
     }
@@ -113,7 +115,7 @@ private:
 
   std::mutex mutex_;
 
-  SessionCloseSignal &atSessionClose;
+  SessionCloseSignal atSessionClose_;
 };
 
 SessionPool::SessionPool() noexcept
