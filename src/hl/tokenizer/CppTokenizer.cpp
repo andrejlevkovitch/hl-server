@@ -83,10 +83,14 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
 
       flagList.emplace_back(flag);
       flags.emplace_back(flagList.back().data());
-
-      LOG_DEBUG("flag: %1%", flag);
     }
     LOG_DEBUG("capacity of manual flags: %1%", flagList.size());
+  }
+
+  {
+    for (const char *flag : flags) {
+      LOG_DEBUG("flag: %1%", flag);
+    }
   }
 
   // clang analizing
@@ -224,7 +228,7 @@ static std::string getDiagnostics(const CXTranslationUnit trUnit) {
   std::stringstream ss;
   std::copy(diagnostics.begin(),
             diagnostics.end(),
-            std::ostream_iterator<std::string>(ss, "\n"));
+            std::ostream_iterator<std::string>(ss, " "));
 
   return ss.str();
 }

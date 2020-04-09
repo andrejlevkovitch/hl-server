@@ -67,7 +67,9 @@ int main(int argc, char *argv[]) {
     LOG_FAILURE("0 is impassible value for count of threads");
   }
 
-  LOG_INFO("\nhost: %1%\nport: %2%\nthreads: %3%", host, port, threadsCount);
+  LOG_INFO("host:     %1%", host);
+  LOG_INFO("port:     %1%", port);
+  LOG_INFO("threads:  %1%", threadsCount);
 
   // run context for several threads
   ss::Context::init(threadsCount);
