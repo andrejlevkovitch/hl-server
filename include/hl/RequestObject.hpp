@@ -8,6 +8,7 @@
  * 2. Second value in array must be an json object with next fields (all
  * fields are required):
  *
+ *   - version         - version of protocol                    (string)
  *   - id              - client id as number                    (num)
  *   - buf_name        - name of buffer for handling            (string)
  *   - buf_type        - type of buffer entity (f.e. `cpp`)     (string)
@@ -21,15 +22,17 @@
 namespace hl {
 struct RequestObject final {
 public:
-  RequestObject() noexcept = default;
+  RequestObject() noexcept;
 
-  /**\brief deserialize json request
+  /**\brief deserialize json request to the object
    *
-   * \throw exception if can not deserialize the request
+   * \return in case of success return empty string, otherwise return error
+   * string
    */
-  explicit RequestObject(std::string_view request);
+  std::string deserialize(std::string_view request) noexcept;
 
   int         msg_num;
+  std::string version;
   int         id;
   std::string buf_type;
   std::string buf_name;

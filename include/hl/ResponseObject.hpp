@@ -8,6 +8,7 @@
  * 2. Second value in array must be an json object with next fields(all
  * fields are required):
  *
+ *     - version       - version of protocol                        (string)
  *     - id            - client id as number from request           (num)
  *     - buf_type      - type of buffer which was handle            (string)
  *     - buf_name      - name of buffer which was handle            (string)
@@ -41,6 +42,7 @@ public:
   std::string dump() const noexcept;
 
   int         msg_num;
+  std::string version;
   int         id;
   std::string buf_type;
   std::string buf_name;

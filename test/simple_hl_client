@@ -31,6 +31,7 @@ local function main()
   local input = io.read("*a")
 
   local request = cjson.encode{0, {
+    version = "v1",
     id = 0,
     buf_type = "cpp",
     buf_name = "a.cpp",

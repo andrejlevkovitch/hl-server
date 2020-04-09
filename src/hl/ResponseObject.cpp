@@ -3,16 +3,15 @@
 #include "hl/ResponseObject.hpp"
 #include <nlohmann/json.hpp>
 
+#define VERSION_TAG       "version"
 #define ID_TAG            "id"
 #define BUFFER_TYPE_TAG   "buffer_type"
 #define BUFFER_NAME_TAG   "buf_name"
 #define RETURN_CODE_TAG   "return_code"
 #define ERROR_MESSAGE_TAG "error_message"
-#define TOKENS_COUNT_TAG  "tokens_count"
 #define TOKENS_TAG        "tokens"
 
-#define TOKEN_GROUP_TAG "group"
-#define TOKEN_POS_TAG   "pos"
+#define VERSION_PROTOCOL "v1"
 
 namespace hl {
 std::string ResponseObject::dump() const noexcept {
@@ -26,6 +25,7 @@ std::string ResponseObject::dump() const noexcept {
   json retval = json::array();
   retval.push_back(msg_num);
   retval.push_back({
+      {VERSION_TAG, version},
       {ID_TAG, id},
       {BUFFER_TYPE_TAG, buf_type},
       {BUFFER_NAME_TAG, buf_name},

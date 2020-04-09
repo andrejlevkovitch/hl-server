@@ -22,15 +22,21 @@ ss::error_code RequestHandler::handle(std::string_view request,
   ss::error_code returnCode; // always ok
 
   std::string   serializedResponse;
-  RequestObject requestObject;
+  RequestObject requestObject{};
 
-  try {
-    requestObject = RequestObject{request};
-  } catch (std::exception &e) {
-    LOG_DEBUG("catch exception: %1%", e.what());
+  std::string error = requestObject.deserialize(request);
+  if (error.empty() == false) {
+    LOG_WARNING("catch exception: %1%", error);
 
     // send error message for client
-    ResponseObject responseObject{0, 0, "", "", FAILURE_CODE, e.what(), {}};
+    ResponseObject responseObject{requestObject.msg_num,
+                                  requestObject.version,
+                                  requestObject.id,
+                                  requestObject.buf_type,
+                                  requestObject.buf_name,
+                                  FAILURE_CODE,
+                                  error,
+                                  {}};
     writeResponse(responseObject, response);
     return returnCode;
   }
@@ -43,6 +49,7 @@ ss::error_code RequestHandler::handle(std::string_view request,
 
     // send error message for client
     ResponseObject responseObject{requestObject.msg_num,
+                                  requestObject.version,
                                   requestObject.id,
                                   requestObject.buf_type,
                                   requestObject.buf_name,
@@ -64,6 +71,7 @@ ss::error_code RequestHandler::handle(std::string_view request,
   }
 
   ResponseObject responseObject{requestObject.msg_num,
+                                requestObject.version,
                                 requestObject.id,
                                 requestObject.buf_type,
                                 requestObject.buf_name,
