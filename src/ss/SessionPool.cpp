@@ -8,6 +8,7 @@
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_hash.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <mutex>
 #include <unordered_map>
 
 namespace ss {
@@ -28,6 +29,8 @@ public:
   /**\return in case of some error return default uuid{00..}
    */
   uuids::uuid append(std::unique_ptr<Session> session) noexcept {
+    std::lock_guard<std::mutex> lock{mutex_};
+
     // generate uuid for the session
     uuids::uuid uuid = gen_();
 
@@ -57,6 +60,8 @@ public:
   }
 
   void remove(const uuids::uuid &uuid) noexcept {
+    std::lock_guard<std::mutex> lock{mutex_};
+
     closed_.clear();
     if (auto found = sessions_.find(uuid); found != sessions_.end()) {
       // XXX we can not remove Session, because in this case we will call
@@ -73,11 +78,15 @@ public:
     }
   }
 
-  size_t size() const noexcept {
+  size_t size() noexcept {
+    std::lock_guard<std::mutex> lock{mutex_};
+
     return sessions_.size();
   }
 
   void closeAllSessions() noexcept {
+    std::lock_guard<std::mutex> lock{mutex_};
+
     for (auto &[key, poolVal] : sessions_) {
       // first of all we need disconnect close connection
       signals::connection closeConnection =
@@ -101,6 +110,8 @@ private:
   uuids::random_generator_mt19937 gen_;
   SessionMap                      sessions_;
   SessionMap                      closed_;
+
+  std::mutex mutex_;
 
   SessionCloseSignal &atSessionClose;
 };
