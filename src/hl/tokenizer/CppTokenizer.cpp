@@ -22,8 +22,7 @@ namespace uuids  = boost::uuids;
 using StringList = std::list<std::string>;
 
 static std::string getDiagnostics(const CXTranslationUnit trUnit);
-static std::string map_cursor_kind(CXCursorKind const kind,
-                                   CXTypeKind const   type);
+static std::string mapTokenKind(CXCursorKind const kind, CXTypeKind const type);
 
 std::string CppTokenizer::tokenize(const std::string &bufName,
                                    const std::string &buffer,
@@ -179,11 +178,8 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
       CXTypeKind   typeKind   = clang_getCursorType(cursor).kind;
       CXCursorKind cursorKind = clang_getCursorKind(cursor);
 
-      std::string group = map_cursor_kind(cursorKind, typeKind);
-
-      if (group.empty() == false) {
-        tokens.emplace_back(Token{group, {row, col, len}});
-      }
+      std::string group = mapTokenKind(cursorKind, typeKind);
+      tokens.emplace_back(Token{group, {row, col, len}});
     }
 
     clang_disposeTokens(translationUnit, cxTokens, numTokens);
@@ -233,7 +229,7 @@ static std::string getDiagnostics(const CXTranslationUnit trUnit) {
   return ss.str();
 }
 
-static std::string map_type_kind(CXTypeKind const typeKind) {
+static std::string mapTypeKind(CXTypeKind const typeKind) {
   switch (typeKind) {
   case CXType_Void:
   case CXType_Bool:
@@ -302,14 +298,14 @@ static std::string map_type_kind(CXTypeKind const typeKind) {
 
   case CXType_Unexposed:
   default:
-    return "";
+    return "unexposed";
   }
 }
 
-static std::string map_cursor_kind(CXCursorKind const cursorKind,
-                                   CXTypeKind const   typeKind) {
+static std::string mapTokenKind(CXCursorKind const cursorKind,
+                                CXTypeKind const   typeKind) {
   if (cursorKind == CXCursor_DeclRefExpr) {
-    return map_type_kind(typeKind);
+    return mapTypeKind(typeKind);
   }
 
   CXString    cursorKindSpelling = clang_getCursorKindSpelling(cursorKind);
