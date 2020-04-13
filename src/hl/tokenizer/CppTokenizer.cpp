@@ -284,6 +284,7 @@ static std::string mapTypeKind(CXTypeKind const typeKind) {
   case CXType_VariableArray:
   case CXType_DependentSizedArray:
   case CXType_Auto:
+  case CXType_Elaborated:
     return "Variable";
 
   case CXType_MemberPointer:
@@ -296,9 +297,12 @@ static std::string mapTypeKind(CXTypeKind const typeKind) {
   case CXType_FunctionProto:
     return "Function";
 
-  case CXType_Unexposed:
-  default:
-    return "unexposed";
+  default: {
+    CXString    typeSpelling = clang_getTypeKindSpelling(typeKind);
+    std::string retval       = clang_getCString(typeSpelling);
+    clang_disposeString(typeSpelling);
+    return retval;
+  }
   }
 }
 
