@@ -12,6 +12,7 @@
 #include <thread>
 #include <vector>
 
+#define HELP_FLAG      "help"
 #define HOST_ARG       "host"
 #define PORT_ARG       "port"
 #define LIMIT_SESSIONS "lim_conn"
@@ -39,7 +40,7 @@ int main(int argc, char *argv[]) {
   po::options_description options;
 
   // add options for server
-  options.add_options()(
+  options.add_options()(HELP_FLAG, "produce help message")(
       HOST_ARG,
       po::value<std::string>()->required()->default_value(DEFAULT_HOST),
       "ip for server")(
@@ -57,6 +58,11 @@ int main(int argc, char *argv[]) {
   po::variables_map argMap;
   po::store(po::parse_command_line(argc, argv, options), argMap);
   po::notify(argMap);
+
+  if (argMap.count(HELP_FLAG)) {
+    std::cout << options << std::endl;
+    return EXIT_SUCCESS;
+  }
 
   std::string host             = argMap[HOST_ARG].as<std::string>();
   uint        port             = argMap[PORT_ARG].as<uint>();
