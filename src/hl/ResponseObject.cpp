@@ -5,7 +5,7 @@
 
 #define VERSION_TAG       "version"
 #define ID_TAG            "id"
-#define BUFFER_TYPE_TAG   "buffer_type"
+#define BUFFER_TYPE_TAG   "buf_type"
 #define BUFFER_NAME_TAG   "buf_name"
 #define RETURN_CODE_TAG   "return_code"
 #define ERROR_MESSAGE_TAG "error_message"
