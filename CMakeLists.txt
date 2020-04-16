@@ -34,11 +34,13 @@ set(PROJECT_SRC
 
 add_executable(${PROJECT_NAME} ${PROJECT_SRC})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
+target_compile_options(${PROJECT_NAME} PRIVATE -g) # needed for working backtrace
 target_link_libraries(${PROJECT_NAME} PRIVATE
   Boost::boost
   Threads::Threads
   ${Boost_LIBRARIES}
   nlohmann_json::nlohmann_json
+  nlohmann_json_schema_validator
   libclang
   stdc++fs
   )

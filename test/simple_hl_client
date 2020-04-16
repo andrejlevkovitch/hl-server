@@ -35,7 +35,6 @@ local function main()
     id = 0,
     buf_type = "cpp",
     buf_name = "a.cpp",
-    buf_length = #input,
     buf_body = input,
     additional_info = additional_info,
   }}

@@ -87,7 +87,7 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
   }
 
   {
-    for (const char *flag : flags) {
+    for ([[maybe_unused]] const char *flag : flags) {
       LOG_DEBUG("flag: %1%", flag);
     }
   }

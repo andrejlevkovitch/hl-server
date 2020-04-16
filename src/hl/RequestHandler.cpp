@@ -26,7 +26,7 @@ ss::error_code RequestHandler::handle(std::string_view request,
 
   std::string error = requestObject.deserialize(request);
   if (error.empty() == false) {
-    LOG_WARNING("catch exception: %1%", error);
+    LOG_ERROR("invalid request: %1%", error);
 
     // send error message for client
     ResponseObject responseObject{requestObject.msg_num,
@@ -44,8 +44,8 @@ ss::error_code RequestHandler::handle(std::string_view request,
   tokenizer::Tokenizer tokenizer =
       tokenizer::TokenizerFactory::getTokenizer(requestObject.buf_type);
   if (tokenizer == nullptr) {
-    LOG_WARNING("couldn't get tokenizer for buffer type: %1%",
-                requestObject.buf_type);
+    LOG_ERROR("couldn't get tokenizer for buffer type: %1%",
+              requestObject.buf_type);
 
     // send error message for client
     ResponseObject responseObject{requestObject.msg_num,

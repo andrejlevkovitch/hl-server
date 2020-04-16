@@ -24,7 +24,7 @@
  * \warning Logging macroses produce output only if macro `NDEBUG` not defined,
  * BUT! `LOG_THROW` and `LOG_FAILURE` will work even if `NDEBUG` defined!
  *
- * \warning be carefull in using logging in destructors. Logger is a static
+ * \warning be carefull with using logging in destructors. Logger is a static
  * object, but there is no guarantie that it will not destroy before some other
  * static objects or etc. If you get error like
  * > pure virtual function called
