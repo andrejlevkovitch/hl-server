@@ -19,6 +19,8 @@
  *       - value   - array of token locations: row, column, len     (arr)
  *
  * \note numeration of lines and columns start from 1
+ *
+ * \see responseSchema_v1
  */
 
 #pragma once
@@ -50,4 +52,106 @@ public:
   std::string error_message;
   TokenList   tokens;
 };
+
+const std::string responseSchema_v1 = R"(
+{
+    "$schema": "http://json-schema/schema#",
+    "title": "response schema v1",
+    "description": "schema for validate response of hl-server",
+
+    "type": "array",
+    "items": [
+      { "$ref": "#/definitions/message_number" },
+      { "$ref": "#/definitions/response_body" }
+    ],
+    "definitions": {
+        "message_number": {
+            "type": "integer"
+        },
+        "response_body": {
+            "type":
+                "object",
+            "properties": {
+                "version": {
+                    "comment": "version of protocol",
+                    "$ref": "#/definitions/version"
+                },
+                "id": {
+                    "comment": "client id",
+                    "$ref": "#/definitions/id"
+                },
+                "buf_type": {
+                    "comment": "type of buffer entity",
+                    "$ref": "#/definitions/buf_type"
+                },
+                "buf_name": {
+                    "comment": "name of buffer",
+                    "$ref": "#/definitions/buf_name"
+                },
+                "return_code": {
+                    "comment": "0 in case of success, otherwise some not null integer value",
+                    "$ref": "#/definitions/return_code"
+                },
+                "error_message": {
+                    "comment": "contains inforamtion about error (if some error caused) ",
+                    "$ref": "#/definitions/error_message"
+                },
+                "tokens": {
+                    "comment": "contains dictionary of tokens by token groups",
+                    "$ref": "#/definitions/tokens"
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "version", "id", "buf_type", "buf_name", "return_code", "error_message", "tokens"
+            ]
+        },
+        "version": {
+            "type": "string",
+            "const": "v1"
+        },
+        "id": {
+            "type": "integer"
+        },
+        "buf_type": {
+            "comment": "in case of error can be empty",
+            "type": "string"
+        },
+        "buf_name": {
+            "comment": "in case of error can be empty",
+            "type": "string"
+        },
+        "return_code": {
+            "type": "integer"
+        },
+        "error_message": {
+            "type": "string"
+        },
+        "tokens": {
+            "type": "object",
+            "patternProperties": {
+                "^.+$": {
+                    "$ref": "#/definitions/array_of_token_koordinates"
+                }
+            },
+            "additionalProperties": false
+        },
+        "array_of_token_koordinates": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/token_koordinate"
+            }
+        },
+        "token_koordinate": {
+            "comment": "contains array of integers with: row, column, token_size",
+            "type": "array",
+            "items": {
+                "type": "integer"
+            },
+            "minItems": 3,
+            "maxItems": 3
+        }
+    }
+}
+)";
 } // namespace hl
