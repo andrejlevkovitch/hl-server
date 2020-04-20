@@ -69,8 +69,11 @@ const std::string responseSchema_v1 = R"(
             "type": "integer"
         },
         "response_body": {
-            "type":
-                "object",
+            "type": "object",
+            "required": [
+                "version", "id", "buf_type", "buf_name", "return_code", "error_message", "tokens"
+            ],
+
             "properties": {
                 "version": {
                     "comment": "version of protocol",
@@ -101,10 +104,7 @@ const std::string responseSchema_v1 = R"(
                     "$ref": "#/definitions/tokens"
                 }
             },
-            "additionalProperties": false,
-            "required": [
-                "version", "id", "buf_type", "buf_name", "return_code", "error_message", "tokens"
-            ]
+            "additionalProperties": false
         },
         "version": {
             "type": "string",

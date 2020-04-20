@@ -60,8 +60,11 @@ const std::string requestSchema_v1 = R"(
             "type": "integer"
         },
         "request_body": {
-            "type":
-                "object",
+            "type": "object",
+            "required": [
+                "version", "id", "buf_type", "buf_name", "buf_body", "additional_info"
+            ],
+
             "properties": {
                 "version": {
                     "comment": "version of protocol",
@@ -88,10 +91,7 @@ const std::string requestSchema_v1 = R"(
                     "$ref": "#/definitions/additional_info"
                 }
             },
-            "additionalProperties": false,
-            "required": [
-                "version", "id", "buf_type", "buf_name", "buf_body", "additional_info"
-            ]
+            "additionalProperties": false
         },
         "version": {
             "type": "string",
