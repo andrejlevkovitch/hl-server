@@ -166,7 +166,7 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
       if (offset < bufLen) {
         // for get length of current token we need find it in buffer and get
         // length of the word
-        std::regex                 wordReg{R"(\w+)"};
+        std::regex                 wordReg{R"([~\w]+)"};
         std::sregex_token_iterator wordIter{buffer.begin() + offset,
                                             buffer.end(),
                                             wordReg};
