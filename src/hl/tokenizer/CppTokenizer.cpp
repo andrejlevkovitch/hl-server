@@ -21,8 +21,9 @@ namespace hl::tokenizer {
 namespace uuids  = boost::uuids;
 using StringList = std::list<std::string>;
 
-static std::string getDiagnostics(const CXTranslationUnit trUnit);
-static std::string mapTokenKind(CXCursorKind const kind, CXTypeKind const type);
+static std::string getDiagnostics(const CXTranslationUnit trUnit) noexcept;
+static std::string mapTokenKind(CXCursorKind const kind,
+                                CXTypeKind const   type) noexcept;
 
 std::string CppTokenizer::tokenize(const std::string &bufName,
                                    const std::string &buffer,
@@ -67,14 +68,14 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
     LOG_DEBUG("capacity of default flags: %1%", numDefaultFlags);
   }
   if (compileFlags.empty() == false) {
-    std::regex reg{R"(\s)"};
-    for (auto iter = std::sregex_token_iterator{compileFlags.begin(),
-                                                compileFlags.end(),
-                                                reg,
-                                                -1};
-         iter != std::sregex_token_iterator{};
-         ++iter) {
-      std::string flag = iter->str();
+    const std::regex flagsReg{R"(\s)"};
+    for (auto flagIter = std::sregex_token_iterator{compileFlags.begin(),
+                                                    compileFlags.end(),
+                                                    flagsReg,
+                                                    -1};
+         flagIter != std::sregex_token_iterator{};
+         ++flagIter) {
+      std::string flag = flagIter->str();
 
       if (flag.empty()) {
         continue;
@@ -166,12 +167,12 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
       if (offset < bufLen) {
         // for get length of current token we need find it in buffer and get
         // length of the word
-        std::regex                 wordReg{R"([~\w]+)"};
-        std::sregex_token_iterator wordIter{buffer.begin() + offset,
-                                            buffer.end(),
-                                            wordReg};
-        if (wordIter != std::sregex_token_iterator{}) {
-          len = wordIter->str().size();
+        const std::regex           cppTokenReg{R"([~#\w]+)"};
+        std::sregex_token_iterator cppTokenIter{buffer.begin() + offset,
+                                                buffer.end(),
+                                                cppTokenReg};
+        if (cppTokenIter != std::sregex_token_iterator{}) {
+          len = cppTokenIter->str().size();
         } // else situation are impassible
       }
 
@@ -193,7 +194,7 @@ Finish:
   return status;
 }
 
-static std::string getDiagnostics(const CXTranslationUnit trUnit) {
+static std::string getDiagnostics(const CXTranslationUnit trUnit) noexcept {
   StringList diagnostics;
 
   size_t diagnosticNum = clang_getNumDiagnostics(trUnit);
@@ -229,7 +230,7 @@ static std::string getDiagnostics(const CXTranslationUnit trUnit) {
   return ss.str();
 }
 
-static std::string mapTypeKind(CXTypeKind const typeKind) {
+static std::string mapTypeKind(CXTypeKind const typeKind) noexcept {
   switch (typeKind) {
   case CXType_Void:
   case CXType_Bool:
@@ -307,7 +308,7 @@ static std::string mapTypeKind(CXTypeKind const typeKind) {
 }
 
 static std::string mapTokenKind(CXCursorKind const cursorKind,
-                                CXTypeKind const   typeKind) {
+                                CXTypeKind const   typeKind) noexcept {
   if (cursorKind == CXCursor_DeclRefExpr) {
     return mapTypeKind(typeKind);
   }
