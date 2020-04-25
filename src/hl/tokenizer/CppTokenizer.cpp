@@ -298,19 +298,24 @@ static std::string mapTypeKind(CXTypeKind const typeKind) noexcept {
   case CXType_FunctionProto:
     return "Function";
 
-  default: {
-    CXString    typeSpelling = clang_getTypeKindSpelling(typeKind);
-    std::string retval       = clang_getCString(typeSpelling);
-    clang_disposeString(typeSpelling);
-    return retval;
+  default:
+    break;
   }
-  }
+
+  CXString    typeSpelling = clang_getTypeKindSpelling(typeKind);
+  std::string retval       = clang_getCString(typeSpelling);
+  clang_disposeString(typeSpelling);
+  return retval;
 }
 
 static std::string mapTokenKind(CXCursorKind const cursorKind,
                                 CXTypeKind const   typeKind) noexcept {
-  if (cursorKind == CXCursor_DeclRefExpr) {
+  switch (cursorKind) {
+  case CXCursor_DeclRefExpr:
+  case CXCursor_VarDecl:
     return mapTypeKind(typeKind);
+  default:
+    break;
   }
 
   CXString    cursorKindSpelling = clang_getCursorKindSpelling(cursorKind);
