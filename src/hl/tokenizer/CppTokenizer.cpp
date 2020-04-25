@@ -202,7 +202,6 @@ static std::string getDiagnostics(const CXTranslationUnit trUnit) noexcept {
     CXDiagnostic diag = clang_getDiagnostic(trUnit, num);
 
     switch (clang_getDiagnosticSeverity(diag)) {
-    case CXDiagnostic_Error:
     case CXDiagnostic_Fatal: {
       CXString spelling =
           clang_formatDiagnostic(diag, CXDiagnostic_DisplayCategoryName);
