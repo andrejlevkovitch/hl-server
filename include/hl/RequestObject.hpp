@@ -68,51 +68,31 @@ const std::string requestSchema_v1 = R"(
             "properties": {
                 "version": {
                     "comment": "version of protocol",
-                    "$ref": "#/definitions/version"
+                    "type": "string",
+                    "const": "v1"
                 },
                 "id": {
                     "comment": "client id",
-                    "$ref": "#/definitions/id"
+                    "type": "integer"
                 },
                 "buf_type": {
                     "comment": "type of buffer entity",
-                    "$ref": "#/definitions/buf_type"
+                    "type": "string"
                 },
                 "buf_name": {
                     "comment": "name of buffer",
-                    "$ref": "#/definitions/buf_name"
+                    "type": "string"
                 },
                 "buf_body": {
                     "comment": "complete buffer entity",
-                    "$ref": "#/definitions/buf_body"
+                    "type": "string"
                 },
                 "additional_info": {
                     "comment": "some handler specific information",
-                    "$ref": "#/definitions/additional_info"
+                    "type": "string"
                 }
             },
             "additionalProperties": false
-        },
-        "version": {
-            "type": "string",
-            "const": "v1"
-        },
-        "id": {
-            "type": "integer"
-        },
-        "buf_type": {
-            "type": "string",
-            "pattern": "^\\w+$"
-        },
-        "buf_name": {
-            "type": "string",
-            "pattern": "^.+$"
-        },
-        "buf_body": {
-            "type": "string"
-        },
-        "additional_info": {
-            "type": "string"
         }
     }
 }

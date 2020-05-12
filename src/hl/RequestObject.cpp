@@ -13,12 +13,10 @@
 #define BUFFER_BODY_TAG     "buf_body"
 #define ADDITIONAL_INFO_TAG "additional_info"
 
-#define VERSION_PROTOCOL "v1"
-
 namespace hl {
 RequestObject::RequestObject() noexcept
     : msg_num{}
-    , version{VERSION_PROTOCOL}
+    , version{}
     , id{}
     , buf_type{}
     , buf_name{}
@@ -45,11 +43,13 @@ std::string RequestObject::deserialize(std::string_view request) noexcept {
     msg_num    = msg[0];
     json &info = msg[1];
 
+    version         = info[VERSION_TAG];
     id              = info[ID_TAG];
     buf_type        = info[BUFFER_TYPE_TAG];
     buf_name        = info[BUFFER_NAME_TAG];
     buf_body        = info[BUFFER_BODY_TAG];
     additional_info = info[ADDITIONAL_INFO_TAG];
+
     return "";
   } else {
     std::string errors = errorHandler.ss.str();

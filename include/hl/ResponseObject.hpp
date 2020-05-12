@@ -77,27 +77,28 @@ const std::string responseSchema_v1 = R"(
             "properties": {
                 "version": {
                     "comment": "version of protocol",
-                    "$ref": "#/definitions/version"
+                    "type": "string",
+                    "const": "v1"
                 },
                 "id": {
                     "comment": "client id",
-                    "$ref": "#/definitions/id"
+                    "type": "integer"
                 },
                 "buf_type": {
                     "comment": "type of buffer entity",
-                    "$ref": "#/definitions/buf_type"
+                    "type": "string"
                 },
                 "buf_name": {
                     "comment": "name of buffer",
-                    "$ref": "#/definitions/buf_name"
+                    "type": "string"
                 },
                 "return_code": {
                     "comment": "0 in case of success, otherwise some not null integer value",
-                    "$ref": "#/definitions/return_code"
+                    "type": "integer"
                 },
                 "error_message": {
                     "comment": "contains inforamtion about error (if some error caused) ",
-                    "$ref": "#/definitions/error_message"
+                    "type": "string"
                 },
                 "tokens": {
                     "comment": "contains dictionary of tokens by token groups",
@@ -105,27 +106,6 @@ const std::string responseSchema_v1 = R"(
                 }
             },
             "additionalProperties": false
-        },
-        "version": {
-            "type": "string",
-            "const": "v1"
-        },
-        "id": {
-            "type": "integer"
-        },
-        "buf_type": {
-            "comment": "in case of error can be empty",
-            "type": "string"
-        },
-        "buf_name": {
-            "comment": "in case of error can be empty",
-            "type": "string"
-        },
-        "return_code": {
-            "type": "integer"
-        },
-        "error_message": {
-            "type": "string"
         },
         "tokens": {
             "type": "object",

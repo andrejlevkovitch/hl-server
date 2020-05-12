@@ -14,8 +14,6 @@
 #define ERROR_MESSAGE_TAG "error_message"
 #define TOKENS_TAG        "tokens"
 
-#define VERSION_PROTOCOL "v1"
-
 namespace hl {
 std::string ResponseObject::dump() const noexcept {
   using json = nlohmann::json;
@@ -25,17 +23,19 @@ std::string ResponseObject::dump() const noexcept {
     serializedTokens[group].emplace_back(pos);
   }
 
-  json msg = json::array();
-  msg.push_back(msg_num);
-  msg.push_back({
+  json data{
       {VERSION_TAG, version},
       {ID_TAG, id},
       {BUFFER_TYPE_TAG, buf_type},
       {BUFFER_NAME_TAG, buf_name},
       {RETURN_CODE_TAG, return_code},
       {ERROR_MESSAGE_TAG, error_message},
-      {TOKENS_TAG, serializedTokens},
-  });
+      {TOKENS_TAG, std::move(serializedTokens)},
+  };
+
+  json msg = json::array();
+  msg.push_back(msg_num);
+  msg.emplace_back(std::move(data));
 
 #ifndef NDEBUG
   using validator = nlohmann::json_schema::json_validator;

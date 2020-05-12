@@ -7,6 +7,8 @@
 #include "tokenizer/TokenizerFactory.hpp"
 #include <exception>
 
+#define BASE_VERSION_PROTOCOL "v1"
+
 namespace hl {
 static void writeResponse(const ResponseObject &responseObject,
                           OUTPUT std::string &response) noexcept {
@@ -29,11 +31,11 @@ ss::error_code RequestHandler::handle(std::string_view request,
     LOG_ERROR("invalid request: %1%", error);
 
     // send error message for client
-    ResponseObject responseObject{requestObject.msg_num,
-                                  requestObject.version,
-                                  requestObject.id,
-                                  requestObject.buf_type,
-                                  requestObject.buf_name,
+    ResponseObject responseObject{0,
+                                  BASE_VERSION_PROTOCOL,
+                                  0,
+                                  "",
+                                  "",
                                   FAILURE_CODE,
                                   error,
                                   {}};
