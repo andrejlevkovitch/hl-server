@@ -57,12 +57,13 @@ int main(int argc, char *argv[]) {
 
   po::variables_map argMap;
   po::store(po::parse_command_line(argc, argv, options), argMap);
-  po::notify(argMap);
 
   if (argMap.count(HELP_FLAG)) {
     std::cout << options << std::endl;
     return EXIT_SUCCESS;
   }
+
+  po::notify(argMap);
 
   std::string host             = argMap[HOST_ARG].as<std::string>();
   uint        port             = argMap[PORT_ARG].as<uint>();
