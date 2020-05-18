@@ -10,24 +10,13 @@
 #define BASE_VERSION_PROTOCOL "v1"
 
 namespace hl {
-static void writeResponse(const ResponseObject &responseObject,
-                          OUTPUT std::string &response) noexcept {
-  std::string serializedResponse = responseObject.dump();
-
-  std::copy(serializedResponse.begin(),
-            serializedResponse.end(),
-            std::back_inserter(response));
-}
-
 ss::error_code RequestHandler::handle(std::string_view request,
                                       OUTPUT std::string &response) noexcept {
   ss::error_code returnCode; // always ok
 
-  std::string   serializedResponse;
   RequestObject requestObject{};
-
-  std::string error = requestObject.deserialize(request);
-  if (error.empty() == false) {
+  if (std::string error = RequestObject::deserialize(request, requestObject);
+      error.empty() == false) {
     LOG_ERROR("invalid request: %1%", error);
 
     // send error message for client
@@ -39,7 +28,7 @@ ss::error_code RequestHandler::handle(std::string_view request,
                                   FAILURE_CODE,
                                   error,
                                   {}};
-    writeResponse(responseObject, response);
+    ResponseObject::serialize(responseObject, response);
     return returnCode;
   }
 
@@ -59,7 +48,7 @@ ss::error_code RequestHandler::handle(std::string_view request,
                                   "couldn't get tokenizer for buffer type: " +
                                       requestObject.buf_type,
                                   {}};
-    writeResponse(responseObject, response);
+    ResponseObject::serialize(responseObject, response);
     return returnCode;
   }
 
@@ -80,7 +69,7 @@ ss::error_code RequestHandler::handle(std::string_view request,
                                 status.empty() ? SUCCESS_CODE : FAILURE_CODE,
                                 status,
                                 std::move(tokens)};
-  writeResponse(responseObject, response);
+  ResponseObject::serialize(responseObject, response);
   return returnCode;
 }
 } // namespace hl

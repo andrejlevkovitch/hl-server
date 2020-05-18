@@ -24,7 +24,8 @@ RequestObject::RequestObject() noexcept
     , additional_info{} {
 }
 
-std::string RequestObject::deserialize(std::string_view request) noexcept {
+std::string RequestObject::deserialize(std::string_view request,
+                                       OUTPUT RequestObject &reqObj) noexcept {
   using json      = nlohmann::json;
   using validator = nlohmann::json_schema::json_validator;
 
@@ -40,15 +41,15 @@ std::string RequestObject::deserialize(std::string_view request) noexcept {
   vl.validate(msg, errorHandler);
 
   if (errorHandler == false) {
-    msg_num    = msg[0];
-    json &info = msg[1];
+    reqObj.msg_num = msg[0];
+    json &info     = msg[1];
 
-    version         = info[VERSION_TAG];
-    id              = info[ID_TAG];
-    buf_type        = info[BUFFER_TYPE_TAG];
-    buf_name        = info[BUFFER_NAME_TAG];
-    buf_body        = info[BUFFER_BODY_TAG];
-    additional_info = info[ADDITIONAL_INFO_TAG];
+    reqObj.version         = info[VERSION_TAG];
+    reqObj.id              = info[ID_TAG];
+    reqObj.buf_type        = info[BUFFER_TYPE_TAG];
+    reqObj.buf_name        = info[BUFFER_NAME_TAG];
+    reqObj.buf_body        = info[BUFFER_BODY_TAG];
+    reqObj.additional_info = info[ADDITIONAL_INFO_TAG];
 
     return "";
   } else {

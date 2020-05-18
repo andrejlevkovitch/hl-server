@@ -18,6 +18,7 @@
  * \see requestSchema_v1
  */
 
+#include <misc.hpp>
 #include <string>
 #include <string_view>
 
@@ -31,7 +32,8 @@ public:
    * \return in case of success return empty string, otherwise return error
    * string
    */
-  std::string deserialize(std::string_view request) noexcept;
+  static std::string deserialize(std::string_view request,
+                                 OUTPUT RequestObject &reqObj) noexcept;
 
   int         msg_num;
   std::string version;

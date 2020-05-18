@@ -40,8 +40,11 @@ namespace hl {
 struct ResponseObject final {
 public:
   /**\brief serialize the object to string
+   * \note if resp is not empty string, then new data will be added in the end
+   * of string
    */
-  std::string dump() const noexcept;
+  static void serialize(const ResponseObject &respObj,
+                        OUTPUT std::string &resp) noexcept;
 
   int         msg_num;
   std::string version;
