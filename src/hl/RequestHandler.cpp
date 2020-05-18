@@ -76,14 +76,14 @@ ss::error_code RequestHandler::handle(std::string_view request,
                                     {}};
   }
 
-  error_code serializationError =
-      ResponseObject::serialize(responseObject, response);
-  if (serializationError.failed()) {
+  if (error_code error = ResponseObject::serialize(responseObject, response);
+      error.failed()) {
     // in this case we has serialization logic error, so I don't see any reason
     // for handling it, because client will don't get result. So if you get this
     // error - you must fix logic of serialization
-    LOG_FAILURE("invalid serialization: %1%", serializationError.message());
+    LOG_FAILURE("invalid serialization: %1%", error.message());
   }
+
   return returnCode;
 }
 } // namespace hl
