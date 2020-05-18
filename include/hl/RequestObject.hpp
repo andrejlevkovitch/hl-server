@@ -18,22 +18,24 @@
  * \see requestSchema_v1
  */
 
+#include <boost/system/error_code.hpp>
 #include <misc.hpp>
 #include <string>
 #include <string_view>
 
 namespace hl {
+using error_code = boost::system::error_code;
+
 struct RequestObject final {
 public:
   RequestObject() noexcept;
 
   /**\brief deserialize json request to the object
    *
-   * \return in case of success return empty string, otherwise return error
-   * string
+   * \return failure error_code in case of invalid message
    */
-  static std::string deserialize(std::string_view request,
-                                 OUTPUT RequestObject &reqObj) noexcept;
+  static error_code deserialize(std::string_view request,
+                                OUTPUT RequestObject &reqObj) noexcept;
 
   int         msg_num;
   std::string version;

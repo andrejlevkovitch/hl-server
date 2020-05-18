@@ -24,15 +24,16 @@ RequestObject::RequestObject() noexcept
     , additional_info{} {
 }
 
-std::string RequestObject::deserialize(std::string_view request,
-                                       OUTPUT RequestObject &reqObj) noexcept {
+error_code RequestObject::deserialize(std::string_view request,
+                                      OUTPUT RequestObject &reqObj) noexcept {
   using json      = nlohmann::json;
   using validator = nlohmann::json_schema::json_validator;
 
   // parse request by Protocol signature
   json msg = json::parse(request, nullptr, false);
   if (msg == json::value_t::discarded) {
-    return "invalid request, request must be encoded json array";
+    return error_code{boost::system::errc::bad_address,
+                      boost::system::system_category()};
   }
 
   validator          vl;
@@ -51,10 +52,13 @@ std::string RequestObject::deserialize(std::string_view request,
     reqObj.buf_body        = info[BUFFER_BODY_TAG];
     reqObj.additional_info = info[ADDITIONAL_INFO_TAG];
 
-    return "";
+    return error_code{};
   } else {
     std::string errors = errorHandler.ss.str();
-    return errors;
+    LOG_ERROR("invalid message: %1%", errors);
+
+    return error_code{boost::system::errc::bad_message,
+                      boost::system::system_category()};
   }
 }
 } // namespace hl

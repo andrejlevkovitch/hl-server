@@ -15,9 +15,9 @@ ss::error_code RequestHandler::handle(std::string_view request,
   ss::error_code returnCode; // always ok
 
   RequestObject requestObject{};
-  if (std::string error = RequestObject::deserialize(request, requestObject);
-      error.empty() == false) {
-    LOG_ERROR("invalid request: %1%", error);
+  if (error_code error = RequestObject::deserialize(request, requestObject);
+      error.failed() == true) {
+    LOG_ERROR("deserialization error: %1%", error.message());
 
     // send error message for client
     ResponseObject responseObject{0,
@@ -26,7 +26,7 @@ ss::error_code RequestHandler::handle(std::string_view request,
                                   "",
                                   "",
                                   FAILURE_CODE,
-                                  error,
+                                  error.message(),
                                   {}};
     ResponseObject::serialize(responseObject, response);
     return returnCode;
@@ -69,7 +69,14 @@ ss::error_code RequestHandler::handle(std::string_view request,
                                 status.empty() ? SUCCESS_CODE : FAILURE_CODE,
                                 status,
                                 std::move(tokens)};
-  ResponseObject::serialize(responseObject, response);
+  error_code     serializationError =
+      ResponseObject::serialize(responseObject, response);
+  if (serializationError.failed()) {
+    // in this case we has serialization logic error, so I don't see any reason
+    // for handling it, because client will don't get result. So if you get this
+    // error - you must fix logic of serialization
+    LOG_FAILURE("invalid serialization: %1%", serializationError.message());
+  }
   return returnCode;
 }
 } // namespace hl

@@ -28,6 +28,7 @@
 #include "hl/Token.hpp"
 #include "misc.hpp"
 #include <array>
+#include <boost/system/error_code.hpp>
 #include <list>
 #include <string>
 
@@ -37,14 +38,17 @@
 #define NO_ERRORS ""
 
 namespace hl {
+using error_code = boost::system::error_code;
+
 struct ResponseObject final {
 public:
   /**\brief serialize the object to string
+   *
    * \note if resp is not empty string, then new data will be added in the end
    * of string
    */
-  static void serialize(const ResponseObject &respObj,
-                        OUTPUT std::string &resp) noexcept;
+  static error_code serialize(const ResponseObject &respObj,
+                              OUTPUT std::string &resp) noexcept;
 
   int         msg_num;
   std::string version;

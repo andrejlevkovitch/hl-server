@@ -15,8 +15,8 @@
 #define TOKENS_TAG        "tokens"
 
 namespace hl {
-void ResponseObject::serialize(const ResponseObject &respObj,
-                               OUTPUT std::string &resp) noexcept {
+error_code ResponseObject::serialize(const ResponseObject &respObj,
+                                     OUTPUT std::string &resp) noexcept {
   using json = nlohmann::json;
 
   json output = json::array();
@@ -43,11 +43,15 @@ void ResponseObject::serialize(const ResponseObject &respObj,
   vl.set_root_schema(json::parse(responseSchema_v1));
   vl.validate(output, errorHandler);
   if (errorHandler) {
-    LOG_FAILURE("invalid response serialization: %1%", errorHandler.ss.str());
+    LOG_ERROR("invalid response serialization: %1%", errorHandler.ss.str());
+    return error_code{boost::system::errc::bad_message,
+                      boost::system::system_category()};
   }
 #endif
 
   std::string serialized = output.dump();
   std::copy(serialized.begin(), serialized.end(), std::back_inserter(resp));
+
+  return error_code{};
 }
 } // namespace hl
