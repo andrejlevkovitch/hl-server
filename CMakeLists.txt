@@ -48,6 +48,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   include
   ${CLANG_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/third-party
   )
 
 # needed for colorize logs int console
