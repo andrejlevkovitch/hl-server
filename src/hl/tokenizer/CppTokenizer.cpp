@@ -136,9 +136,27 @@ TokenList CppTokenizer::tokenize(const std::string &bufName,
   });
 
   if (parseError != CXError_Success) {
+    std::string errorString;
+    switch (parseError) {
+    case CXError_Failure:
+      errorString = "Failure";
+      break;
+    case CXError_Crashed:
+      errorString = "Crashed";
+      break;
+    case CXError_InvalidArguments:
+      errorString = "InvalidArgument";
+      break;
+    case CXError_ASTReadError:
+      errorString = "ASTReadError";
+      break;
+    default:
+      errorString = "unexpected error - " + std::to_string(parseError);
+      break;
+    }
     LOG_THROW(std::runtime_error,
               "can't parse translation unit: %1%",
-              std::to_string(parseError));
+              errorString);
   } else if (std::string diagnostics = getDiagnostics(translationUnit);
              diagnostics.empty() == false) {
     LOG_THROW(std::runtime_error, diagnostics);
