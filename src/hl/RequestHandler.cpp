@@ -52,24 +52,31 @@ ss::error_code RequestHandler::handle(std::string_view request,
     return returnCode;
   }
 
-  TokenList   tokens;
-  std::string status = tokenizer->tokenize(requestObject.buf_name,
+  ResponseObject responseObject;
+  try {
+    TokenList tokens = tokenizer->tokenize(requestObject.buf_name,
                                            requestObject.buf_body,
-                                           requestObject.additional_info,
-                                           tokens);
-  if (status.empty() == false) {
-    LOG_WARNING("tokenizer error: %1%", status);
+                                           requestObject.additional_info);
+    responseObject   = ResponseObject{requestObject.msg_num,
+                                    requestObject.version,
+                                    requestObject.id,
+                                    requestObject.buf_type,
+                                    requestObject.buf_name,
+                                    SUCCESS_CODE,
+                                    "",
+                                    std::move(tokens)};
+  } catch (std::exception &e) {
+    responseObject = ResponseObject{requestObject.msg_num,
+                                    requestObject.version,
+                                    requestObject.id,
+                                    requestObject.buf_type,
+                                    requestObject.buf_name,
+                                    FAILURE_CODE,
+                                    e.what(),
+                                    {}};
   }
 
-  ResponseObject responseObject{requestObject.msg_num,
-                                requestObject.version,
-                                requestObject.id,
-                                requestObject.buf_type,
-                                requestObject.buf_name,
-                                status.empty() ? SUCCESS_CODE : FAILURE_CODE,
-                                status,
-                                std::move(tokens)};
-  error_code     serializationError =
+  error_code serializationError =
       ResponseObject::serialize(responseObject, response);
   if (serializationError.failed()) {
     // in this case we has serialization logic error, so I don't see any reason

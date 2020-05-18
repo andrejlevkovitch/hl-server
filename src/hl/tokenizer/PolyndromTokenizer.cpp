@@ -11,11 +11,10 @@ bool is_polyndrom(std::string_view str) {
   return str == reverseString;
 }
 
-std::string
-PolyndromTokenizer::tokenize([[maybe_unused]] const std::string &bufName,
-                             const std::string &                 buffer,
-                             [[maybe_unused]] const std::string &additionalInfo,
-                             OUTPUT TokenList &tokens) noexcept {
+TokenList PolyndromTokenizer::tokenize(
+    [[maybe_unused]] const std::string &bufName,
+    const std::string &                 buffer,
+    [[maybe_unused]] const std::string &additionalInfo) {
   using LineList = std::list<std::string>;
 
   std::regex newLineReg{"\n"};
@@ -25,7 +24,8 @@ PolyndromTokenizer::tokenize([[maybe_unused]] const std::string &bufName,
       std::sregex_token_iterator{},
       std::back_inserter(lines));
 
-  size_t counter = 0;
+  TokenList tokens;
+  size_t    counter = 0;
   for (const std::string &line : lines) {
     std::regex wordReg{R"(\w+)"};
     for (auto iter =
@@ -46,6 +46,6 @@ PolyndromTokenizer::tokenize([[maybe_unused]] const std::string &bufName,
     ++counter;
   }
 
-  return {};
+  return tokens;
 }
 } // namespace hl::tokenizer

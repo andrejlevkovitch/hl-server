@@ -21,14 +21,31 @@ namespace hl::tokenizer {
 namespace uuids  = boost::uuids;
 using StringList = std::list<std::string>;
 
+template <typename T>
+class Finalizer {
+public:
+  ~Finalizer() {
+    callback();
+  }
+
+  T callback;
+};
+
+template <typename T>
+Finalizer<T> make_finalizer(T callback) {
+  return Finalizer<T>{callback};
+}
+
 static std::string getDiagnostics(const CXTranslationUnit trUnit) noexcept;
 static std::string mapTokenKind(CXCursorKind const kind,
                                 CXTypeKind const   type) noexcept;
 
-std::string CppTokenizer::tokenize(const std::string &bufName,
-                                   const std::string &buffer,
-                                   const std::string &compileFlags,
-                                   OUTPUT TokenList &tokens) noexcept {
+std::pair<std::vector<const char *>, StringList>
+getCompileFlags(std::string_view &compileFlags) noexcept;
+
+TokenList CppTokenizer::tokenize(const std::string &bufName,
+                                 const std::string &buffer,
+                                 const std::string &compileFlags) {
   size_t bufLen = buffer.size();
 
   // clang diagnostic works only with files, so we need temporary file
@@ -43,17 +60,22 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
   std::filesystem::path tmpFile = tmpDir / tmpFileName;
   LOG_DEBUG("use temporary file: %1%", tmpFile);
 
+  auto fileRemover = make_finalizer([tmpFile]() {
+    std::filesystem::remove(tmpFile);
+  });
+
   // write buffer to file
   {
     std::ofstream fout{tmpFile, std::ios::out};
     if (fout.is_open() == false) {
-      return "can not create file for processing";
+      LOG_THROW(std::runtime_error,
+                "can not create temporary file for cpp buffer");
     }
     std::copy(buffer.begin(),
               buffer.end(),
               std::ostreambuf_iterator<char>{fout});
     if (fout.fail()) {
-      return "can not create file for processing";
+      LOG_THROW(std::runtime_error, "write error to temporary file");
     }
   }
 
@@ -94,8 +116,6 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
   }
 
   // clang analizing
-  std::string status;
-
   CXIndex           index = clang_createIndex(0, 0);
   CXTranslationUnit translationUnit;
   CXErrorCode       parseError =
@@ -108,90 +128,90 @@ std::string CppTokenizer::tokenize(const std::string &bufName,
                                   CXTranslationUnit_DetailedPreprocessingRecord,
                                   &translationUnit);
 
+  auto indexFinalizer  = make_finalizer([index]() {
+    clang_disposeIndex(index);
+  });
+  auto trUnitFinalizer = make_finalizer([translationUnit]() {
+    clang_disposeTranslationUnit(translationUnit);
+  });
+
   if (parseError != CXError_Success) {
-    status = "can not parse translation unit: " + std::to_string(parseError);
-    goto Finish;
+    LOG_THROW(std::runtime_error,
+              "can't parse translation unit: %1%",
+              std::to_string(parseError));
   } else if (std::string diagnostics = getDiagnostics(translationUnit);
              diagnostics.empty() == false) {
-    status = diagnostics;
-    goto Finish;
+    LOG_THROW(std::runtime_error, diagnostics);
   }
 
-  { // all right
-    CXFile trUFile = clang_getFile(translationUnit, tmpFile.c_str());
-    if (trUFile == nullptr) {
-      status = "can not get handling file from translation unit";
-      goto Finish;
-    }
-
-    size_t endOffset = 0;
-    clang_getFileContents(translationUnit, trUFile, &endOffset);
-
-    CXSourceLocation beginLoc =
-        clang_getLocationForOffset(translationUnit, trUFile, 0);
-    CXSourceLocation endLoc =
-        clang_getLocationForOffset(translationUnit, trUFile, endOffset);
-
-    CXSourceRange range = clang_getRange(beginLoc, endLoc);
-
-    unsigned int numTokens;
-    CXToken *    cxTokens = nullptr;
-    clang_tokenize(translationUnit, range, &cxTokens, &numTokens);
-
-    if (cxTokens == nullptr) {
-      status = "no tokens";
-      goto Finish;
-    }
-
-    std::vector<CXCursor> cursors(numTokens);
-    clang_annotateTokens(translationUnit, cxTokens, numTokens, cursors.data());
-
-    for (unsigned int i = 0; i < numTokens; ++i) {
-      CXToken &cxToken = cxTokens[i];
-
-      // handle only identifiers
-      if (clang_getTokenKind(cxToken) != CXToken_Identifier) {
-        continue;
-      }
-
-      CXCursor &       cursor         = cursors[i];
-      CXSourceLocation cursorLocation = clang_getCursorLocation(cursor);
-
-      unsigned int row    = 0;
-      unsigned int col    = 0;
-      unsigned int len    = 0;
-      unsigned int offset = 0;
-      clang_getFileLocation(cursorLocation, nullptr, &row, &col, &offset);
-
-      // also we need get len of current token
-      if (offset < bufLen) {
-        // for get length of current token we need find it in buffer and get
-        // length of the word
-        const std::regex           cppTokenReg{R"([~#\w]+)"};
-        std::sregex_token_iterator cppTokenIter{buffer.begin() + offset,
-                                                buffer.end(),
-                                                cppTokenReg};
-        if (cppTokenIter != std::sregex_token_iterator{}) {
-          len = cppTokenIter->str().size();
-        } // else situation are impassible
-      }
-
-      CXTypeKind   typeKind   = clang_getCursorType(cursor).kind;
-      CXCursorKind cursorKind = clang_getCursorKind(cursor);
-
-      std::string group = mapTokenKind(cursorKind, typeKind);
-      tokens.emplace_back(Token{group, {row, col, len}});
-    }
-
-    clang_disposeTokens(translationUnit, cxTokens, numTokens);
+  CXFile trUFile = clang_getFile(translationUnit, tmpFile.c_str());
+  if (trUFile == nullptr) {
+    LOG_THROW(std::runtime_error,
+              "can not get handling file from translation unit");
   }
 
-Finish:
-  clang_disposeTranslationUnit(translationUnit);
-  clang_disposeIndex(index);
-  std::filesystem::remove(tmpFile);
+  size_t endOffset = 0;
+  clang_getFileContents(translationUnit, trUFile, &endOffset);
 
-  return status;
+  CXSourceLocation beginLoc =
+      clang_getLocationForOffset(translationUnit, trUFile, 0);
+  CXSourceLocation endLoc =
+      clang_getLocationForOffset(translationUnit, trUFile, endOffset);
+
+  CXSourceRange range = clang_getRange(beginLoc, endLoc);
+
+  unsigned int numTokens;
+  CXToken *    cxTokens = nullptr;
+  clang_tokenize(translationUnit, range, &cxTokens, &numTokens);
+
+  if (cxTokens == nullptr) {
+    LOG_THROW(std::runtime_error, "no tokens");
+  }
+
+  std::vector<CXCursor> cursors(numTokens);
+  clang_annotateTokens(translationUnit, cxTokens, numTokens, cursors.data());
+
+  TokenList tokens;
+  for (unsigned int i = 0; i < numTokens; ++i) {
+    CXToken &cxToken = cxTokens[i];
+
+    // handle only identifiers
+    if (clang_getTokenKind(cxToken) != CXToken_Identifier) {
+      continue;
+    }
+
+    CXCursor &       cursor         = cursors[i];
+    CXSourceLocation cursorLocation = clang_getCursorLocation(cursor);
+
+    unsigned int row    = 0;
+    unsigned int col    = 0;
+    unsigned int len    = 0;
+    unsigned int offset = 0;
+    clang_getFileLocation(cursorLocation, nullptr, &row, &col, &offset);
+
+    // also we need get len of current token
+    if (offset < bufLen) {
+      // for get length of current token we need find it in buffer and get
+      // length of the word
+      const std::regex           cppTokenReg{R"([~#\w]+)"};
+      std::sregex_token_iterator cppTokenIter{buffer.begin() + offset,
+                                              buffer.end(),
+                                              cppTokenReg};
+      if (cppTokenIter != std::sregex_token_iterator{}) {
+        len = cppTokenIter->str().size();
+      } // else situation are impassible
+    }
+
+    CXTypeKind   typeKind   = clang_getCursorType(cursor).kind;
+    CXCursorKind cursorKind = clang_getCursorKind(cursor);
+
+    std::string group = mapTokenKind(cursorKind, typeKind);
+    tokens.emplace_back(Token{group, {row, col, len}});
+  }
+
+  clang_disposeTokens(translationUnit, cxTokens, numTokens);
+
+  return tokens;
 }
 
 static std::string getDiagnostics(const CXTranslationUnit trUnit) noexcept {
