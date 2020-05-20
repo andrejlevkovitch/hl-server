@@ -6,6 +6,8 @@
 -- be a set as script flags in right order (last parameter not required, so if not set will be set empty string). All
 -- buffer data must be put in standard input
 --
+-- @usage `./simple_hl_client 127.0.0.19173 < a.cpp`
+--
 local socket_factory = require("socket")
 local cjson = require("cjson")
 
