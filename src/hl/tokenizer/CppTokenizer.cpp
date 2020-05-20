@@ -36,91 +36,49 @@ Finalizer<T> make_finalizer(T callback) {
   return Finalizer<T>{callback};
 }
 
+/**\brief create temporary file for compilation and write in it all buffer data
+ * \throw exception if can not create file
+ */
+[[nodiscard]] std::filesystem::path getCompileFile(const std::string &bufName,
+                                                   const std::string &buffer);
+
+/**\warning first value is depending from second, so be careful with using it
+ */
+[[nodiscard]] std::pair<std::vector<const char *>, StringList>
+getCompileFlags(const std::string &compileFlags) noexcept;
+
 static std::string getDiagnostics(const CXTranslationUnit trUnit) noexcept;
+
 static std::string mapTokenKind(CXCursorKind const kind,
                                 CXTypeKind const   type) noexcept;
+
+TokenLocation getTokenLocation(CXTranslationUnit trUnit,
+                               CXToken           token) noexcept;
+
+std::string getTokenGroup(CXCursor cursor) noexcept;
 
 std::pair<std::vector<const char *>, StringList>
 getCompileFlags(std::string_view &compileFlags) noexcept;
 
+std::string clangErrorToString(CXErrorCode code) noexcept;
+
 TokenList CppTokenizer::tokenize(const std::string &bufName,
                                  const std::string &buffer,
                                  const std::string &compileFlags) {
-  size_t bufLen = buffer.size();
-
   // clang diagnostic works only with files, so we need temporary file
-  std::filesystem::path tmpDir = std::filesystem::temp_directory_path();
-
-  uuids::random_generator_mt19937 uuidGenerator;
-  uuids::uuid                     uuid = uuidGenerator();
-
-  std::string bufferExtension = std::filesystem::path{bufName}.extension();
-  std::filesystem::path tmpFileName = uuids::to_string(uuid) + bufferExtension;
-
-  std::filesystem::path tmpFile = tmpDir / tmpFileName;
-  LOG_DEBUG("use temporary file: %1%", tmpFile);
-
-  auto fileRemover = make_finalizer([tmpFile]() {
-    std::filesystem::remove(tmpFile);
+  std::filesystem::path compileFile = getCompileFile(bufName, buffer);
+  auto                  fileRemover = make_finalizer([compileFile]() {
+    std::filesystem::remove(compileFile);
   });
 
-  // write buffer to file
-  {
-    std::ofstream fout{tmpFile, std::ios::out};
-    if (fout.is_open() == false) {
-      LOG_THROW(std::runtime_error,
-                "can not create temporary file for cpp buffer");
-    }
-    std::copy(buffer.begin(),
-              buffer.end(),
-              std::ostreambuf_iterator<char>{fout});
-    if (fout.fail()) {
-      LOG_THROW(std::runtime_error, "write error to temporary file");
-    }
-  }
-
-  // get compile flags
-  std::vector<const char *> flags;
-  StringList                flagList;
-  { // at first set defaults flags
-    size_t numDefaultFlags = sizeof(defaultFlags) / sizeof(defaultFlags[0]);
-    for (size_t i = 0; i < numDefaultFlags; ++i) {
-      flags.emplace_back(defaultFlags[i]);
-    }
-    LOG_DEBUG("capacity of default flags: %1%", numDefaultFlags);
-  }
-  if (compileFlags.empty() == false) {
-    const std::regex flagsReg{R"(\s)"};
-    for (auto flagIter = std::sregex_token_iterator{compileFlags.begin(),
-                                                    compileFlags.end(),
-                                                    flagsReg,
-                                                    -1};
-         flagIter != std::sregex_token_iterator{};
-         ++flagIter) {
-      std::string flag = flagIter->str();
-
-      if (flag.empty()) {
-        continue;
-      }
-
-      flagList.emplace_back(flag);
-      flags.emplace_back(flagList.back().data());
-    }
-    LOG_DEBUG("capacity of manual flags: %1%", flagList.size());
-  }
-
-  {
-    for ([[maybe_unused]] const char *flag : flags) {
-      LOG_DEBUG("flag: %1%", flag);
-    }
-  }
+  auto [flags, flagList] = getCompileFlags(compileFlags);
 
   // clang analizing
   CXIndex           index = clang_createIndex(0, 0);
   CXTranslationUnit translationUnit;
   CXErrorCode       parseError =
       clang_parseTranslationUnit2(index,
-                                  tmpFile.c_str(),
+                                  compileFile.c_str(),
                                   flags.data(),
                                   flags.size(),
                                   nullptr,
@@ -136,33 +94,15 @@ TokenList CppTokenizer::tokenize(const std::string &bufName,
   });
 
   if (parseError != CXError_Success) {
-    std::string errorString;
-    switch (parseError) {
-    case CXError_Failure:
-      errorString = "Failure";
-      break;
-    case CXError_Crashed:
-      errorString = "Crashed";
-      break;
-    case CXError_InvalidArguments:
-      errorString = "InvalidArgument";
-      break;
-    case CXError_ASTReadError:
-      errorString = "ASTReadError";
-      break;
-    default:
-      errorString = "unexpected error - " + std::to_string(parseError);
-      break;
-    }
     LOG_THROW(std::runtime_error,
               "can't parse translation unit: %1%",
-              errorString);
+              clangErrorToString(parseError));
   } else if (std::string diagnostics = getDiagnostics(translationUnit);
              diagnostics.empty() == false) {
     LOG_THROW(std::runtime_error, diagnostics);
   }
 
-  CXFile trUFile = clang_getFile(translationUnit, tmpFile.c_str());
+  CXFile trUFile = clang_getFile(translationUnit, compileFile.c_str());
   if (trUFile == nullptr) {
     LOG_THROW(std::runtime_error,
               "can not get handling file from translation unit");
@@ -197,39 +137,88 @@ TokenList CppTokenizer::tokenize(const std::string &bufName,
     if (clang_getTokenKind(cxToken) != CXToken_Identifier) {
       continue;
     }
+    CXCursor &cursor = cursors[i];
 
-    CXCursor &       cursor         = cursors[i];
-    CXSourceLocation cursorLocation = clang_getCursorLocation(cursor);
+    std::string   group    = getTokenGroup(cursor);
+    TokenLocation location = getTokenLocation(translationUnit, cxToken);
 
-    unsigned int row    = 0;
-    unsigned int col    = 0;
-    unsigned int len    = 0;
-    unsigned int offset = 0;
-    clang_getFileLocation(cursorLocation, nullptr, &row, &col, &offset);
-
-    // also we need get len of current token
-    if (offset < bufLen) {
-      // for get length of current token we need find it in buffer and get
-      // length of the word
-      const std::regex           cppTokenReg{R"([~#\w]+)"};
-      std::sregex_token_iterator cppTokenIter{buffer.begin() + offset,
-                                              buffer.end(),
-                                              cppTokenReg};
-      if (cppTokenIter != std::sregex_token_iterator{}) {
-        len = cppTokenIter->str().size();
-      } // else situation are impassible
-    }
-
-    CXTypeKind   typeKind   = clang_getCursorType(cursor).kind;
-    CXCursorKind cursorKind = clang_getCursorKind(cursor);
-
-    std::string group = mapTokenKind(cursorKind, typeKind);
-    tokens.emplace_back(Token{group, {row, col, len}});
+    tokens.emplace_back(Token{group, location});
   }
 
   clang_disposeTokens(translationUnit, cxTokens, numTokens);
 
   return tokens;
+}
+
+[[nodiscard]] std::filesystem::path getCompileFile(const std::string &bufName,
+                                                   const std::string &buffer) {
+  std::filesystem::path tmpDir = std::filesystem::temp_directory_path();
+
+  uuids::random_generator_mt19937 uuidGenerator;
+  uuids::uuid                     uuid = uuidGenerator();
+
+  std::string bufferExtension = std::filesystem::path{bufName}.extension();
+  std::filesystem::path tmpFileName = uuids::to_string(uuid) + bufferExtension;
+
+  std::filesystem::path tmpFile = tmpDir / tmpFileName;
+  LOG_DEBUG("use temporary file: %1%", tmpFile);
+
+  // write buffer to file
+  {
+    std::ofstream fout{tmpFile, std::ios::out};
+    if (fout.is_open() == false) {
+      std::filesystem::remove(tmpFile);
+      LOG_THROW(std::runtime_error,
+                "can not create temporary file for cpp buffer");
+    }
+    std::copy(buffer.begin(),
+              buffer.end(),
+              std::ostreambuf_iterator<char>{fout});
+    if (fout.fail()) {
+      std::filesystem::remove(tmpFile);
+      LOG_THROW(std::runtime_error, "write error to temporary file");
+    }
+  }
+
+  return tmpFile;
+}
+
+[[nodiscard]] std::pair<std::vector<const char *>, StringList>
+getCompileFlags(const std::string &compileFlags) noexcept {
+  std::vector<const char *> flags;
+  StringList                flagList;
+  { // at first set defaults flags
+    size_t numDefaultFlags = sizeof(defaultFlags) / sizeof(defaultFlags[0]);
+    for (size_t i = 0; i < numDefaultFlags; ++i) {
+      flags.emplace_back(defaultFlags[i]);
+    }
+    LOG_DEBUG("capacity of default flags: %1%", numDefaultFlags);
+  }
+  if (compileFlags.empty() == false) {
+    const std::regex flagsReg{R"(\s)"};
+    for (auto flagIter = std::sregex_token_iterator{compileFlags.begin(),
+                                                    compileFlags.end(),
+                                                    flagsReg,
+                                                    -1};
+         flagIter != std::sregex_token_iterator{};
+         ++flagIter) {
+      std::string flag = flagIter->str();
+
+      if (flag.empty()) {
+        continue;
+      }
+
+      flagList.emplace_back(flag);
+      flags.emplace_back(flagList.back().data());
+    }
+    LOG_DEBUG("capacity of manual flags: %1%", flagList.size());
+  }
+
+  for ([[maybe_unused]] const char *flag : flags) {
+    LOG_DEBUG("flag: %1%", flag);
+  }
+
+  return std::make_pair(std::move(flags), std::move(flagList));
 }
 
 static std::string getDiagnostics(const CXTranslationUnit trUnit) noexcept {
@@ -360,4 +349,52 @@ static std::string mapTokenKind(CXCursorKind const cursorKind,
   clang_disposeString(cursorKindSpelling);
   return retval;
 }
+
+TokenLocation getTokenLocation(CXTranslationUnit trUnit,
+                               CXToken           token) noexcept {
+  CXSourceRange    tokenRange = clang_getTokenExtent(trUnit, token);
+  CXSourceLocation begin      = clang_getRangeStart(tokenRange);
+  CXSourceLocation end        = clang_getRangeEnd(tokenRange);
+
+  unsigned int line;
+  unsigned int column;
+  unsigned int beginOffset;
+  unsigned int endOffset;
+  clang_getFileLocation(begin, nullptr, &line, &column, &beginOffset);
+  clang_getFileLocation(end, nullptr, nullptr, nullptr, &endOffset);
+
+  return TokenLocation{line, column, endOffset - beginOffset};
+}
+
+std::string getTokenGroup(CXCursor cursor) noexcept {
+  CXTypeKind   typeKind   = clang_getCursorType(cursor).kind;
+  CXCursorKind cursorKind = clang_getCursorKind(cursor);
+
+  std::string group = mapTokenKind(cursorKind, typeKind);
+  return group;
+}
+
+std::string clangErrorToString(CXErrorCode code) noexcept {
+  std::string errorString;
+  switch (code) {
+  case CXError_Failure:
+    errorString = "Failure";
+    break;
+  case CXError_Crashed:
+    errorString = "Crashed";
+    break;
+  case CXError_InvalidArguments:
+    errorString = "InvalidArgument";
+    break;
+  case CXError_ASTReadError:
+    errorString = "ASTReadError";
+    break;
+  case CXError_Success:
+    errorString = "Success";
+    break;
+  }
+
+  return errorString;
+}
+
 } // namespace hl::tokenizer
