@@ -12,7 +12,6 @@
 #include <fstream>
 #include <iterator>
 #include <list>
-#include <memory>
 #include <regex>
 #include <sstream>
 #include <vector>
@@ -39,12 +38,12 @@ Finalizer<T> make_finalizer(T callback) {
 /**\brief create temporary file for compilation and write in it all buffer data
  * \throw exception if can not create file
  */
-[[nodiscard]] std::filesystem::path getCompileFile(const std::string &bufName,
-                                                   const std::string &buffer);
+[[nodiscard]] static std::filesystem::path
+getCompileFile(const std::string &bufName, const std::string &buffer);
 
 /**\warning first value is depending from second, so be careful with using it
  */
-[[nodiscard]] std::pair<std::vector<const char *>, StringList>
+[[nodiscard]] static std::pair<std::vector<const char *>, StringList>
 getCompileFlags(const std::string &compileFlags) noexcept;
 
 static std::string getDiagnostics(const CXTranslationUnit trUnit) noexcept;
@@ -52,15 +51,12 @@ static std::string getDiagnostics(const CXTranslationUnit trUnit) noexcept;
 static std::string mapTokenKind(CXCursorKind const kind,
                                 CXTypeKind const   type) noexcept;
 
-TokenLocation getTokenLocation(CXTranslationUnit trUnit,
-                               CXToken           token) noexcept;
+static TokenLocation getTokenLocation(CXTranslationUnit trUnit,
+                                      CXToken           token) noexcept;
 
-std::string getTokenGroup(CXCursor cursor) noexcept;
+static std::string getTokenGroup(CXCursor cursor) noexcept;
 
-std::pair<std::vector<const char *>, StringList>
-getCompileFlags(std::string_view &compileFlags) noexcept;
-
-std::string clangErrorToString(CXErrorCode code) noexcept;
+static std::string clangErrorToString(CXErrorCode code) noexcept;
 
 TokenList CppTokenizer::tokenize(const std::string &bufName,
                                  const std::string &buffer,
