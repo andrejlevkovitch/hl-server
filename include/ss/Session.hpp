@@ -13,6 +13,11 @@ using CloseSignal = boost::signals2::signal<void()>;
 
 class SessionImp;
 
+/**\brief session represents one conntection to the server
+ * \note in case of several requests that was get at one time, will be handle
+ * only last request, all reqests before will be ignored - they are considered
+ * as expired
+ */
 class Session {
 public:
   Session(tcp::socket sock) noexcept;

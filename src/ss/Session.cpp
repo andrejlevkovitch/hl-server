@@ -19,8 +19,6 @@
 namespace ss {
 using Connection = boost::signals2::connection;
 
-static const std::sregex_token_iterator reqEndIter;
-
 class SessionImp : public asio::coroutine {
 public:
   SessionImp(tcp::socket sock, CloseSignal &mainClose) noexcept
@@ -76,24 +74,19 @@ private:
     if (error.failed() == false) {
       reenter(this) {
         for (;;) {
-          // XXX read operation can read some extra data, so if we has some
-          // valid data in request body from previous iteration we don't need
-          // read another data, just handle already loaded
-          if (reqIter_ == reqEndIter) {
-            yield asio::async_read_until(sock_,
-                                         asio::dynamic_buffer(req_),
-                                         DATA_DELIMITER,
-                                         std::bind(&SessionImp::operator(),
-                                                   this,
-                                                   std::move(self),
-                                                   std::placeholders::_1,
-                                                   std::placeholders::_2));
-            LOG_INFO("readed: %1.3fKb", transfered / 1024.);
-            LOG_INFO("in buffer: %1.3fKb", req_.size() / 1024.);
-          }
+          yield asio::async_read_until(sock_,
+                                       asio::dynamic_buffer(req_),
+                                       DATA_DELIMITER,
+                                       std::bind(&SessionImp::operator(),
+                                                 this,
+                                                 std::move(self),
+                                                 std::placeholders::_1,
+                                                 std::placeholders::_2));
+          LOG_INFO("readed: %1.3fKb", transfered / 1024.);
+          LOG_INFO("in buffer: %1.3fKb", req_.size() / 1024.);
 
-          // handling
-          {
+          // handle only if we has complete data in buffer
+          if (*req_.rbegin() == DATA_DELIMITER) {
             AbstractHandlerFactory *factory = Context::getHandlerFactory();
             if (factory == nullptr) {
               LOG_ERROR("handler factory not set");
@@ -108,36 +101,24 @@ private:
               break;
             }
 
-            // XXX after reading buffer can contains some extra data or even
-            // several request, so we need split buffer by separate requests
-            static const std::regex regByDelim{DATA_DELIMITER};
-            if (reqIter_ == reqEndIter) {
-              reqIter_ = std::sregex_token_iterator{req_.begin(),
-                                                    req_.end(),
-                                                    regByDelim,
-                                                    -1};
+            static const std::regex    regByDelimiter{DATA_DELIMITER};
+            std::sregex_token_iterator requestIterator{req_.begin(),
+                                                       req_.end(),
+                                                       regByDelimiter,
+                                                       -1};
+
+            // XXX after reading buffer can contains several request, but,
+            // usually, we need handle only last request and ignore all requests
+            // before
+            for (; std::next(requestIterator) != std::sregex_token_iterator{};
+                 ++requestIterator) {
             }
 
-            if (reqIter_ != reqEndIter) {
-              error_code err = handler->handle(reqIter_->str(), res_);
-              if (err.failed()) {
-                LOG_ERROR(err.message());
-                close();
-                break;
-              }
-
-              ++reqIter_;
-              if (reqIter_ == std::sregex_token_iterator{}) {
-                req_.clear();
-              } else if (*req_.rbegin() != DATA_DELIMITER &&
-                         std::next(reqIter_) == std::sregex_token_iterator{}) {
-                // XXX in this case we has partial extra data in buffer. So we
-                // need clear all data from request buffer, but safe only this
-                // partially data for read missing data at next call of read
-                // operation
-                req_     = reqIter_->str();
-                reqIter_ = reqEndIter;
-              }
+            error_code err = handler->handle(requestIterator->str(), res_);
+            if (err.failed()) {
+              LOG_ERROR(err.message());
+              close();
+              break;
             }
 
             if (res_.empty()) {
@@ -145,24 +126,43 @@ private:
               close();
               break;
             }
+
+            // and clear request buffer
+            req_.clear();
+          } else { // we has partial data
+            static const std::regex    regByDelimiter{DATA_DELIMITER};
+            std::sregex_token_iterator requestIterator{req_.begin(),
+                                                       req_.end(),
+                                                       regByDelimiter,
+                                                       -1};
+
+            // we can has partial data only at end of buffer, but before can be
+            // several requests, that we need ignore
+            for (; std::next(requestIterator) != std::sregex_token_iterator{};
+                 ++requestIterator) {
+            }
+
+            req_ = requestIterator->str();
           }
 
-          // add delimiter symbol for response
-          res_ += DATA_DELIMITER;
+          if (res_.empty() == false) {
+            // add delimiter symbol for response
+            res_ += DATA_DELIMITER;
 
-          yield asio::async_write(sock_,
-                                  asio::dynamic_buffer(res_),
-                                  asio::transfer_all(),
-                                  std::bind(&SessionImp::operator(),
-                                            this,
-                                            std::move(self),
-                                            std::placeholders::_1,
-                                            std::placeholders::_2));
+            yield asio::async_write(sock_,
+                                    asio::dynamic_buffer(res_),
+                                    asio::transfer_all(),
+                                    std::bind(&SessionImp::operator(),
+                                              this,
+                                              std::move(self),
+                                              std::placeholders::_1,
+                                              std::placeholders::_2));
 
-          LOG_INFO("writed: %1.3fKb", transfered / 1024.);
+            LOG_INFO("writed: %1.3fKb", transfered / 1024.);
 
-          // clear response buffer after every write
-          res_.clear();
+            // clear response buffer after every write
+            res_.clear();
+          }
         }
       }
     } else if (error == asio::error::eof) {
@@ -181,8 +181,9 @@ private:
   tcp::socket sock_;
 
   /**\brief request buffer
-   * \note request buffer can contains several request
-   * \see reqIter_
+   * \note after reading request buffer can contains several request (@see
+   * asio::async_read_until), but we handle only last! All request before are
+   * expired
    */
   std::string req_;
 
@@ -191,12 +192,6 @@ private:
   std::string res_;
 
   CloseSignal atClose_;
-
-  /**\brief after reading from socket we can has several request in buffer (or
-   * one request and partiad data), so we need handle every request separatly.
-   * So we use this regex iterator for split buffer per request
-   */
-  std::sregex_token_iterator reqIter_;
 };
 
 Session::Session(tcp::socket sock) noexcept
