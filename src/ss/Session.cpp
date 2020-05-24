@@ -5,16 +5,13 @@
 #include "ss/Context.hpp"
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/read.hpp>
-#include <boost/asio/read_until.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/yield.hpp>
 #include <iterator>
-#include <regex>
+#include <ss/errors.hpp>
 
 #define REQUEST_BUFFER_RESERVED  1024 * 1000 // 1Mb
 #define RESPONSE_BUFFER_RESERVED 1024 * 1000
-
-#define DATA_DELIMITER '\n'
 
 namespace ss {
 using Connection = boost::signals2::connection;
@@ -74,16 +71,15 @@ private:
     if (error.failed() == false) {
       reenter(this) {
         for (;;) {
-          yield asio::async_read_until(sock_,
-                                       asio::dynamic_buffer(req_),
-                                       DATA_DELIMITER,
-                                       std::bind(&SessionImp::operator(),
-                                                 this,
-                                                 std::move(self),
-                                                 std::placeholders::_1,
-                                                 std::placeholders::_2));
+          yield asio::async_read(sock_,
+                                 asio::dynamic_buffer(req_),
+                                 asio::transfer_at_least(1),
+                                 std::bind(&SessionImp::operator(),
+                                           this,
+                                           std::move(self),
+                                           std::placeholders::_1,
+                                           std::placeholders::_2));
           LOG_INFO("readed: %1.3fKb", transfered / 1024.);
-          LOG_INFO("in buffer: %1.3fKb", req_.size() / 1024.);
 
           // request handling
           {
@@ -101,54 +97,29 @@ private:
               break;
             }
 
-            static const std::regex    regByDelimiter{DATA_DELIMITER};
-            std::sregex_token_iterator requestIterator{req_.begin(),
-                                                       req_.end(),
-                                                       regByDelimiter,
-                                                       -1};
+            LOG_DEBUG("handle request");
 
-            // XXX after reading buffer can contains several request, but,
-            // usually, we need handle only last request and ignore all requests
-            // before
-            int ignoreRequestCounter = 0;
-            for (; std::next(requestIterator) != std::sregex_token_iterator{};
-                 ++requestIterator, ++ignoreRequestCounter) {
-            }
-
-            if (ignoreRequestCounter != 0) {
-              LOG_INFO("was ignored %1% requests in buffer",
-                       ignoreRequestCounter);
-            }
-
-            if (*req_.rbegin() ==
-                DATA_DELIMITER) { // then buffer contains complete request, so
-                                  // handle it
-              LOG_DEBUG("handle request");
-
-              error_code err = handler->handle(requestIterator->str(), res_);
-              if (err.failed()) {
-                LOG_ERROR(err.message());
-                close();
-                break;
-              }
-
-              if (res_.empty()) {
-                LOG_ERROR("response is empty");
-                close();
-                break;
-              }
-            } else { // then buffer contains partial data, so we need read again
-              LOG_DEBUG("buffer contains partial data, so read again");
-
-              // clear all data, but save latest partial data and read from
-              // socket the rest
-              req_ = requestIterator->str();
+            error_code err = handler->handle(req_, res_);
+            // error_code err = handler->handle(requestIterator->str(), res_);
+            if (err.failed() &&
+                err.value() == error::SessionErrors::PartialData) {
+              // so we need read more
+              LOG_DEBUG("read more");
               continue;
             }
-          }
 
-          // add delimiter symbol for response
-          res_ += DATA_DELIMITER;
+            if (err.failed()) {
+              LOG_ERROR(err.message());
+              close();
+              break;
+            }
+
+            if (res_.empty()) {
+              LOG_ERROR("response is empty");
+              close();
+              break;
+            }
+          }
 
           yield asio::async_write(sock_,
                                   asio::dynamic_buffer(res_),
@@ -182,9 +153,6 @@ private:
   tcp::socket sock_;
 
   /**\brief request buffer
-   * \note after reading request buffer can contains several request (@see
-   * asio::async_read_until), but we handle only last! All request before are
-   * expired
    */
   std::string req_;
 

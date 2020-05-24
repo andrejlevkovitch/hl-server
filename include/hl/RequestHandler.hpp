@@ -11,7 +11,10 @@ namespace hl {
  */
 class RequestHandler final : public ss::AbstractRequestHander {
 public:
-  ss::error_code handle(std::string_view request,
-                        OUTPUT std::string &response) noexcept override;
+  /**\note in case of severla requests in one buffer will handle only latest,
+   * all requests before are considered as expired
+   */
+  ss::error_code handle(const std::string &requestBuffer,
+                        OUTPUT std::string &responseBuffer) noexcept override;
 };
 } // namespace hl
