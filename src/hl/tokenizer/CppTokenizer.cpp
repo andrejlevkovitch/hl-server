@@ -95,7 +95,9 @@ TokenList CppTokenizer::tokenize(const std::string &bufName,
               clangErrorToString(parseError));
   } else if (std::string diagnostics = getDiagnostics(translationUnit);
              diagnostics.empty() == false) {
-    LOG_THROW(std::runtime_error, diagnostics);
+    LOG_THROW(std::runtime_error,
+              "translation unit diagnostics error: ",
+              diagnostics);
   }
 
   CXFile trUFile = clang_getFile(translationUnit, compileFile.c_str());
@@ -208,10 +210,6 @@ getCompileFlags(const std::string &compileFlags) noexcept {
       flags.emplace_back(flagList.back().data());
     }
     LOG_DEBUG("capacity of manual flags: %1%", flagList.size());
-  }
-
-  for ([[maybe_unused]] const char *flag : flags) {
-    LOG_DEBUG("flag: %1%", flag);
   }
 
   return std::make_pair(std::move(flags), std::move(flagList));
