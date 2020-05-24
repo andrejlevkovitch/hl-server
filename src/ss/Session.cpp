@@ -85,8 +85,8 @@ private:
           LOG_INFO("readed: %1.3fKb", transfered / 1024.);
           LOG_INFO("in buffer: %1.3fKb", req_.size() / 1024.);
 
-          // handle only if we has complete data in buffer
-          if (*req_.rbegin() == DATA_DELIMITER) {
+          // request handling
+          {
             AbstractHandlerFactory *factory = Context::getHandlerFactory();
             if (factory == nullptr) {
               LOG_ERROR("handler factory not set");
@@ -110,59 +110,60 @@ private:
             // XXX after reading buffer can contains several request, but,
             // usually, we need handle only last request and ignore all requests
             // before
+            int ignoreRequestCounter = 0;
             for (; std::next(requestIterator) != std::sregex_token_iterator{};
-                 ++requestIterator) {
+                 ++requestIterator, ++ignoreRequestCounter) {
             }
 
-            error_code err = handler->handle(requestIterator->str(), res_);
-            if (err.failed()) {
-              LOG_ERROR(err.message());
-              close();
-              break;
+            if (ignoreRequestCounter != 0) {
+              LOG_INFO("was ignored %1% requests in buffer",
+                       ignoreRequestCounter);
             }
 
-            if (res_.empty()) {
-              LOG_ERROR("response is empty");
-              close();
-              break;
+            if (*req_.rbegin() ==
+                DATA_DELIMITER) { // then buffer contains complete request, so
+                                  // handle it
+              LOG_DEBUG("handle request");
+
+              error_code err = handler->handle(requestIterator->str(), res_);
+              if (err.failed()) {
+                LOG_ERROR(err.message());
+                close();
+                break;
+              }
+
+              if (res_.empty()) {
+                LOG_ERROR("response is empty");
+                close();
+                break;
+              }
+            } else { // then buffer contains partial data, so we need read again
+              LOG_DEBUG("buffer contains partial data, so read again");
+
+              // clear all data, but save latest partial data and read from
+              // socket the rest
+              req_ = requestIterator->str();
+              continue;
             }
-
-            // and clear request buffer
-            req_.clear();
-          } else { // we has partial data
-            static const std::regex    regByDelimiter{DATA_DELIMITER};
-            std::sregex_token_iterator requestIterator{req_.begin(),
-                                                       req_.end(),
-                                                       regByDelimiter,
-                                                       -1};
-
-            // we can has partial data only at end of buffer, but before can be
-            // several requests, that we need ignore
-            for (; std::next(requestIterator) != std::sregex_token_iterator{};
-                 ++requestIterator) {
-            }
-
-            req_ = requestIterator->str();
           }
 
-          if (res_.empty() == false) {
-            // add delimiter symbol for response
-            res_ += DATA_DELIMITER;
+          // add delimiter symbol for response
+          res_ += DATA_DELIMITER;
 
-            yield asio::async_write(sock_,
-                                    asio::dynamic_buffer(res_),
-                                    asio::transfer_all(),
-                                    std::bind(&SessionImp::operator(),
-                                              this,
-                                              std::move(self),
-                                              std::placeholders::_1,
-                                              std::placeholders::_2));
+          yield asio::async_write(sock_,
+                                  asio::dynamic_buffer(res_),
+                                  asio::transfer_all(),
+                                  std::bind(&SessionImp::operator(),
+                                            this,
+                                            std::move(self),
+                                            std::placeholders::_1,
+                                            std::placeholders::_2));
 
-            LOG_INFO("writed: %1.3fKb", transfered / 1024.);
+          LOG_INFO("writed: %1.3fKb", transfered / 1024.);
 
-            // clear response buffer after every write
-            res_.clear();
-          }
+          // clear buffers
+          req_.clear();
+          res_.clear();
         }
       }
     } else if (error == asio::error::eof) {
