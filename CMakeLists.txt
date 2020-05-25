@@ -21,6 +21,7 @@ set(PROJECT_SRC
   src/ss/Server.cpp
   src/ss/Session.cpp
   src/ss/SessionPool.cpp
+  src/ss/errors.cpp
 
   src/hl/RequestHandler.cpp
   src/hl/HandlerFactory.cpp

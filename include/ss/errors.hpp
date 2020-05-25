@@ -32,10 +32,9 @@ public:
   }
 };
 
-inline error_code make_error_code(SessionErrors ev) {
-  return boost::system::error_code(static_cast<int>(ev),
-                                   SessionErrorCategory{});
-}
+error_code make_error_code(SessionErrors ev);
+
+bool isSessionErrorCategory(const boost::system::error_category &category);
 } // namespace error
 } // namespace ss
 

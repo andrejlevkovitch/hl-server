@@ -101,10 +101,10 @@ private:
 
             error_code err = handler->handle(req_, res_);
             // error_code err = handler->handle(requestIterator->str(), res_);
-            if (err.failed() &&
+            if (err.failed() && error::isSessionErrorCategory(err.category()) &&
                 err.value() == error::SessionErrors::PartialData) {
               // so we need read more
-              LOG_DEBUG("read more");
+              LOG_DEBUG(err.message());
               continue;
             }
 
