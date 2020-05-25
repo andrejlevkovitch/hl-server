@@ -7,7 +7,7 @@
 namespace hl::tokenizer {
 class CppTokenizer : public AbstractTokenizer {
 public:
-  TokenList tokenize(const std::string &bufName,
+  TokenList tokenize(const std::string &bufType,
                      const std::string &buffer,
                      const std::string &compileFlags) override;
 };

@@ -45,8 +45,12 @@ error_code RequestObject::deserialize(std::string_view request,
     reqObj.msg_num = msg[0];
     json &info     = msg[1];
 
-    reqObj.version         = info[VERSION_TAG];
-    reqObj.id              = info[ID_TAG];
+    reqObj.version = info[VERSION_TAG];
+    if (info.type() == json::value_t::number_integer) {
+      reqObj.id = info[ID_TAG].get<int>();
+    } else {
+      reqObj.id = info[ID_TAG].get<std::string>();
+    }
     reqObj.buf_type        = info[BUFFER_TYPE_TAG];
     reqObj.buf_name        = info[BUFFER_NAME_TAG];
     reqObj.buf_body        = info[BUFFER_BODY_TAG];

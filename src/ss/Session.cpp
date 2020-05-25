@@ -129,7 +129,6 @@ private:
                                             std::move(self),
                                             std::placeholders::_1,
                                             std::placeholders::_2));
-
           LOG_INFO("writed: %1.3fKb", transfered / 1024.);
 
           // clear buffers

@@ -9,7 +9,7 @@
  * fields are required):
  *
  *     - version       - version of protocol                        (string)
- *     - id            - client id as number from request           (num)
+ *     - id            - client id                             (string, integer)
  *     - buf_type      - type of buffer which was handle            (string)
  *     - buf_name      - name of buffer which was handle            (string)
  *     - return_code   - in success it is equal to 0                (num)
@@ -31,6 +31,7 @@
 #include <boost/system/error_code.hpp>
 #include <list>
 #include <string>
+#include <variant>
 
 #define SUCCESS_CODE 0
 #define FAILURE_CODE 1
@@ -50,20 +51,20 @@ public:
   static error_code serialize(const ResponseObject &respObj,
                               OUTPUT std::string &resp) noexcept;
 
-  int         msg_num;
-  std::string version;
-  int         id;
-  std::string buf_type;
-  std::string buf_name;
-  int         return_code;
-  std::string error_message;
-  TokenList   tokens;
+  int                            msg_num;
+  std::string                    version;
+  std::variant<int, std::string> id;
+  std::string                    buf_type;
+  std::string                    buf_name;
+  int                            return_code;
+  std::string                    error_message;
+  TokenList                      tokens;
 };
 
 const std::string responseSchema_v1 = R"(
 {
     "$schema": "http://json-schema/schema#",
-    "title": "response schema v1",
+    "title": "response schema v1.1",
     "description": "schema for validate response of hl-server",
 
     "type": "array",
@@ -85,11 +86,11 @@ const std::string responseSchema_v1 = R"(
                 "version": {
                     "comment": "version of protocol",
                     "type": "string",
-                    "const": "v1"
+                    "enum": ["v1", "v1.1"]
                 },
                 "id": {
                     "comment": "client id",
-                    "type": "integer"
+                    "type": ["string", "integer"]
                 },
                 "buf_type": {
                     "comment": "type of buffer entity",

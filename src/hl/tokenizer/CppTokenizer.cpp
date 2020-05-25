@@ -39,7 +39,7 @@ Finalizer<T> make_finalizer(T callback) {
  * \throw exception if can not create file
  */
 [[nodiscard]] static std::filesystem::path
-getCompileFile(const std::string &bufName, const std::string &buffer);
+getCompileFile(const std::string &bufType, const std::string &buffer);
 
 /**\warning first value is depending from second, so be careful with using it
  */
@@ -58,11 +58,11 @@ static std::string getTokenGroup(CXCursor cursor) noexcept;
 
 static std::string clangErrorToString(CXErrorCode code) noexcept;
 
-TokenList CppTokenizer::tokenize(const std::string &bufName,
+TokenList CppTokenizer::tokenize(const std::string &bufType,
                                  const std::string &buffer,
                                  const std::string &compileFlags) {
   // clang diagnostic works only with files, so we need temporary file
-  std::filesystem::path compileFile = getCompileFile(bufName, buffer);
+  std::filesystem::path compileFile = getCompileFile(bufType, buffer);
   auto                  fileRemover = make_finalizer([compileFile]() {
     std::filesystem::remove(compileFile);
   });
@@ -148,14 +148,14 @@ TokenList CppTokenizer::tokenize(const std::string &bufName,
   return tokens;
 }
 
-[[nodiscard]] std::filesystem::path getCompileFile(const std::string &bufName,
+[[nodiscard]] std::filesystem::path getCompileFile(const std::string &bufType,
                                                    const std::string &buffer) {
   std::filesystem::path tmpDir = std::filesystem::temp_directory_path();
 
   uuids::random_generator_mt19937 uuidGenerator;
   uuids::uuid                     uuid = uuidGenerator();
 
-  std::string bufferExtension = std::filesystem::path{bufName}.extension();
+  std::string           bufferExtension = bufType;
   std::filesystem::path tmpFileName = uuids::to_string(uuid) + bufferExtension;
 
   std::filesystem::path tmpFile = tmpDir / tmpFileName;

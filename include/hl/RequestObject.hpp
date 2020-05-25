@@ -9,9 +9,9 @@
  * fields are required):
  *
  *   - version         - version of protocol                    (string)
- *   - id              - client id as number                    (num)
- *   - buf_name        - name of buffer for handling            (string)
+ *   - id              - client id                     (string, integer)
  *   - buf_type        - type of buffer entity (f.e. `cpp`)     (string)
+ *   - buf_name        - name of buffer for handling            (string)
  *   - buf_body        - buffer body as plain text              (string)
  *   - additional_info - some information needed for tokenizer  (string)
  *
@@ -22,6 +22,7 @@
 #include <misc.hpp>
 #include <string>
 #include <string_view>
+#include <variant>
 
 namespace hl {
 using error_code = boost::system::error_code;
@@ -37,19 +38,19 @@ public:
   static error_code deserialize(std::string_view request,
                                 OUTPUT RequestObject &reqObj) noexcept;
 
-  int         msg_num;
-  std::string version;
-  int         id;
-  std::string buf_type;
-  std::string buf_name;
-  std::string buf_body;
-  std::string additional_info;
+  int                            msg_num;
+  std::string                    version;
+  std::variant<int, std::string> id;
+  std::string                    buf_type;
+  std::string                    buf_name;
+  std::string                    buf_body;
+  std::string                    additional_info;
 };
 
 const std::string requestSchema_v1 = R"(
 {
     "$schema": "http://json-schema/schema#",
-    "title": "request schema v1",
+    "title": "request schema v1.1",
     "description": "schema for validate requests for hl-server",
 
     "type": "array",
@@ -73,11 +74,11 @@ const std::string requestSchema_v1 = R"(
                 "version": {
                     "comment": "version of protocol",
                     "type": "string",
-                    "const": "v1"
+                    "enum": ["v1", "v1.1"]
                 },
                 "id": {
                     "comment": "client id",
-                    "type": "integer"
+                    "type": ["string", "integer"]
                 },
                 "buf_type": {
                     "comment": "type of buffer entity",

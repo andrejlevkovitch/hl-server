@@ -24,12 +24,17 @@ error_code ResponseObject::serialize(const ResponseObject &respObj,
 
   json &data = output.emplace_back(json{
       {VERSION_TAG, respObj.version},
-      {ID_TAG, respObj.id},
       {BUFFER_TYPE_TAG, respObj.buf_type},
       {BUFFER_NAME_TAG, respObj.buf_name},
       {RETURN_CODE_TAG, respObj.return_code},
       {ERROR_MESSAGE_TAG, respObj.error_message},
   });
+
+  std::visit(
+      [&data](auto &&arg) {
+        data[ID_TAG] = arg;
+      },
+      respObj.id);
 
   json &serializedTokens = data[TOKENS_TAG] = json::object();
   for (const auto &[group, pos] : respObj.tokens) {

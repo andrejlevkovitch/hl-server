@@ -9,7 +9,7 @@
 #include <regex>
 
 #define DATA_DELIMITER        '\n'
-#define BASE_VERSION_PROTOCOL "v1"
+#define BASE_VERSION_PROTOCOL "v1.1"
 
 namespace hl {
 ss::error_code
@@ -83,7 +83,7 @@ RequestHandler::handle(const std::string &requestBuffer,
   }
 
   try {
-    TokenList tokens = tokenizer->tokenize(requestObject.buf_name,
+    TokenList tokens = tokenizer->tokenize(requestObject.buf_type,
                                            requestObject.buf_body,
                                            requestObject.additional_info);
     responseObject   = ResponseObject{requestObject.msg_num,
