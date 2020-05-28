@@ -38,19 +38,16 @@
 
 #define NO_ERRORS ""
 
+namespace nlohmann::json_schema {
+class json_validator;
+}
+
 namespace hl {
 using error_code = boost::system::error_code;
+using Validator  = nlohmann::json_schema::json_validator;
 
 struct ResponseObject final {
 public:
-  /**\brief serialize the object to string
-   *
-   * \note if resp is not empty string, then new data will be added in the end
-   * of string
-   */
-  static error_code serialize(const ResponseObject &respObj,
-                              OUTPUT std::string &resp) noexcept;
-
   int                            msg_num;
   std::string                    version;
   std::variant<int, std::string> id;
@@ -59,6 +56,25 @@ public:
   int                            return_code;
   std::string                    error_message;
   TokenList                      tokens;
+};
+
+class ResponseSerializer {
+public:
+  ResponseSerializer() noexcept;
+  ~ResponseSerializer() noexcept;
+
+  /**\brief serialize the object to string
+   *
+   * \note if resp is not empty string, then new data will be added in the end
+   * of string
+   */
+  error_code serialize(const ResponseObject &respObj,
+                       OUTPUT std::string &resp) noexcept;
+
+private:
+  /**\note uses only for debug
+   */
+  Validator *responseValidator_;
 };
 
 const std::string responseSchema_v1 = R"(

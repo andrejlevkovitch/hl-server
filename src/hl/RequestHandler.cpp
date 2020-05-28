@@ -12,13 +12,25 @@
 #define BASE_VERSION_PROTOCOL "v1.1"
 
 namespace hl {
+RequestHandler::RequestHandler() noexcept
+    : requestDeserializer_{nullptr}
+    , responseSerializer_{nullptr} {
+  requestDeserializer_ = new RequestDeserializer{};
+  responseSerializer_  = new ResponseSerializer{};
+}
+
+RequestHandler::~RequestHandler() noexcept {
+  delete requestDeserializer_;
+  delete responseSerializer_;
+}
+
 ss::error_code
 RequestHandler::handle(const std::string &requestBuffer,
                        OUTPUT std::string &responseBuffer) noexcept {
   // in this case we has partial data at the end, so just return partial data
   // error
   if (requestBuffer.back() != DATA_DELIMITER) {
-    LOG_ERROR("request buffer contains partial data");
+    LOG_WARNING("request buffer contains partial data");
     return ss::error::make_error_code(ss::error::SessionErrors::PartialData);
   }
 
@@ -48,7 +60,8 @@ RequestHandler::handle(const std::string &requestBuffer,
   RequestObject        requestObject;
   ResponseObject       responseObject;
   tokenizer::Tokenizer tokenizer;
-  if (error_code error = RequestObject::deserialize(request, requestObject);
+  if (error_code error =
+          requestDeserializer_->deserialize(request, requestObject);
       error.failed() == true) {
     LOG_ERROR("deserialization error: %1%", error.message());
 
@@ -107,7 +120,7 @@ RequestHandler::handle(const std::string &requestBuffer,
 
 Finally:
   if (error_code error =
-          ResponseObject::serialize(responseObject, responseBuffer);
+          responseSerializer_->serialize(responseObject, responseBuffer);
       error.failed()) {
     // in this case we has serialization logic error, so I don't see any reason
     // for handling it, because client will don't get result. So if you get this

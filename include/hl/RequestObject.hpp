@@ -24,20 +24,16 @@
 #include <string_view>
 #include <variant>
 
+namespace nlohmann::json_schema {
+class json_validator;
+}
+
 namespace hl {
 using error_code = boost::system::error_code;
+using Validator  = nlohmann::json_schema::json_validator;
 
 struct RequestObject final {
 public:
-  RequestObject() noexcept;
-
-  /**\brief deserialize json request to the object
-   *
-   * \return failure error_code in case of invalid message
-   */
-  static error_code deserialize(std::string_view request,
-                                OUTPUT RequestObject &reqObj) noexcept;
-
   int                            msg_num;
   std::string                    version;
   std::variant<int, std::string> id;
@@ -45,6 +41,22 @@ public:
   std::string                    buf_name;
   std::string                    buf_body;
   std::string                    additional_info;
+};
+
+class RequestDeserializer final {
+public:
+  RequestDeserializer() noexcept;
+  ~RequestDeserializer() noexcept;
+
+  /**\brief deserialize json request to the object
+   *
+   * \return failure error_code in case of invalid message
+   */
+  error_code deserialize(std::string_view request,
+                         OUTPUT RequestObject &reqObj) noexcept;
+
+private:
+  Validator *requestValidator_;
 };
 
 const std::string requestSchema_v1 = R"(
