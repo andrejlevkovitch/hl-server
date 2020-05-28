@@ -96,7 +96,7 @@ TokenList CppTokenizer::tokenize(const std::string &bufType,
   } else if (std::string diagnostics = getDiagnostics(translationUnit);
              diagnostics.empty() == false) {
     LOG_THROW(std::runtime_error,
-              "translation unit diagnostics error: ",
+              "translation unit diagnostics error: %1%",
               diagnostics);
   }
 
