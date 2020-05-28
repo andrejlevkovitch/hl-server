@@ -146,9 +146,19 @@ private:
                                                  std::placeholders::_1,
                                                  std::placeholders::_2));
 
-          // create new session and add to pool
-          sessionPool_.append(std::make_unique<Session>(std::move(sock)));
-          LOG_DEBUG("new session added");
+          // create and start new session
+          {
+            Session *session =
+                sessionPool_.append(std::make_unique<Session>(std::move(sock)));
+            LOG_DEBUG("new session added");
+
+            if (session == nullptr) {
+              LOG_ERROR("session doesn't append");
+              continue;
+            }
+
+            session->start();
+          }
 
           // in this case stop accept any new sockets
           if (maxSessionCount_ != 0 &&

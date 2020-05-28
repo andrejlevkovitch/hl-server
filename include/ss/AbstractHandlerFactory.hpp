@@ -12,8 +12,7 @@ class AbstractHandlerFactory {
 public:
   virtual ~AbstractHandlerFactory() = default;
 
-  /**\note the function must be fast, becuase Session call it every time when
-   * handle request. This needed for dynamic changing Request handlers
+  /**\brief call at Session start, so every Session has own instance of handler
    */
   virtual Handler getRequestHandler() noexcept = 0;
 };

@@ -11,7 +11,7 @@ namespace hl {
  */
 class RequestHandler final : public ss::AbstractRequestHander {
 public:
-  /**\note in case of severla requests in one buffer will handle only latest,
+  /**\note in case of several requests in one buffer will handle only latest,
    * all requests before are considered as expired
    */
   ss::error_code handle(const std::string &requestBuffer,

@@ -16,11 +16,10 @@ public:
   SessionPool() noexcept;
   ~SessionPool() noexcept;
 
-  /**\return uuid of session or empty string if can not insert new session
-   * \brief insert new session to pool and start it
+  /**\return pointer to inserted session or nullptr if insertion failed
    */
-  std::string append(std::unique_ptr<Session> session) noexcept;
-  void        remove(const std::string &uuid) noexcept;
+  Session *append(std::unique_ptr<Session> session) noexcept;
+  void     remove(const std::string &uuid) noexcept;
 
   size_t size() const noexcept;
 

@@ -35,6 +35,19 @@ public:
    * (with the SessionImp) exists
    */
   void start(std::shared_ptr<SessionImp> self) noexcept {
+    // at first we need get handler
+    AbstractHandlerFactory *factory = Context::getHandlerFactory();
+    if (factory == nullptr) {
+      LOG_ERROR("handler factory not set");
+      close();
+    }
+
+    requestHandler_ = factory->getRequestHandler();
+    if (requestHandler_ == nullptr) {
+      LOG_ERROR("invalid handler");
+      close();
+    }
+
     this->operator()(std::move(self), error_code{}, 0);
   }
 
@@ -83,24 +96,9 @@ private:
 
           // request handling
           {
-            AbstractHandlerFactory *factory = Context::getHandlerFactory();
-            if (factory == nullptr) {
-              LOG_ERROR("handler factory not set");
-              close();
-              break;
-            }
-
-            Handler handler = factory->getRequestHandler();
-            if (handler == nullptr) {
-              LOG_ERROR("invalid handler");
-              close();
-              break;
-            }
-
             LOG_DEBUG("handle request");
 
-            error_code err = handler->handle(req_, res_);
-            // error_code err = handler->handle(requestIterator->str(), res_);
+            error_code err = requestHandler_->handle(req_, res_);
             if (err.failed() && error::isSessionErrorCategory(err.category()) &&
                 err.value() == error::SessionErrors::PartialData) {
               // so we need read more
@@ -160,6 +158,8 @@ private:
   std::string res_;
 
   CloseSignal atClose_;
+
+  Handler requestHandler_;
 };
 
 Session::Session(tcp::socket sock) noexcept

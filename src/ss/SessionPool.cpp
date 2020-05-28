@@ -28,9 +28,7 @@ public:
     });
   }
 
-  /**\return in case of some error return default uuid{00..}
-   */
-  uuids::uuid append(std::unique_ptr<Session> session) noexcept {
+  Session *append(std::unique_ptr<Session> session) noexcept {
     std::lock_guard<std::mutex> lock{mutex_};
 
     // generate uuid for the session
@@ -47,18 +45,16 @@ public:
 
     if (!inserted.second) {
       LOG_ERROR("insertion in pool failed");
-      return {};
+      return nullptr;
     }
-
-    // and start the session asynchonously
-    std::unique_ptr<Session> &insertedSession =
-        std::get<PoolVal::UnicSession>(inserted.first->second);
-    insertedSession->start();
 
     LOG_DEBUG("insert session:      %1%", uuid);
     LOG_DEBUG("sessions now opened: %1%", sessions_.size());
 
-    return uuid;
+    std::unique_ptr<Session> &insertedSession =
+        std::get<PoolVal::UnicSession>(inserted.first->second);
+
+    return insertedSession.get();
   }
 
   void remove(const uuids::uuid &uuid) noexcept {
@@ -127,9 +123,9 @@ SessionPool::~SessionPool() noexcept {
   delete imp_;
 }
 
-std::string SessionPool::append(std::unique_ptr<Session> session) noexcept {
-  uuids::uuid uuid = imp_->append(std::move(session));
-  return uuids::to_string(uuid);
+Session *SessionPool::append(std::unique_ptr<Session> session) noexcept {
+  Session *inserted = imp_->append(std::move(session));
+  return inserted;
 }
 
 void SessionPool::remove(const std::string &uuid) noexcept {
