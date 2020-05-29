@@ -9,20 +9,20 @@
  * fields are required):
  *
  *   - version         - version of protocol                    (string)
- *   - id              - client id                     (string, integer)
+ *   - id              - client id                              (string)
  *   - buf_type        - type of buffer entity (f.e. `cpp`)     (string)
  *   - buf_name        - name of buffer for handling            (string)
  *   - buf_body        - buffer body as plain text              (string)
  *   - additional_info - some information needed for tokenizer  (string)
  *
  * \see requestSchema_v1
+ * \see requestSchema_v11
  */
 
 #include <boost/system/error_code.hpp>
 #include <misc.hpp>
 #include <string>
 #include <string_view>
-#include <variant>
 
 namespace nlohmann::json_schema {
 class json_validator;
@@ -34,13 +34,13 @@ using Validator  = nlohmann::json_schema::json_validator;
 
 struct RequestObject final {
 public:
-  int                            msg_num;
-  std::string                    version;
-  std::variant<int, std::string> id;
-  std::string                    buf_type;
-  std::string                    buf_name;
-  std::string                    buf_body;
-  std::string                    additional_info;
+  int         msg_num;
+  std::string version;
+  std::string id;
+  std::string buf_type;
+  std::string buf_name;
+  std::string buf_body;
+  std::string additional_info;
 };
 
 class RequestDeserializer final {
@@ -56,10 +56,68 @@ public:
                          OUTPUT RequestObject &reqObj) noexcept;
 
 private:
-  Validator *requestValidator_;
+  Validator *baseRequestValidator_;
+  Validator *requestValidator_1_;
+  Validator *requestValidator_11_;
 };
 
 const std::string requestSchema_v1 = R"(
+{
+    "$schema": "http://json-schema/schema#",
+    "title": "request schema v1",
+    "description": "schema for validate requests for hl-server",
+
+    "type": "array",
+    "items": [
+      { "$ref": "#/definitions/message_number" },
+      { "$ref": "#/definitions/request_body" }
+    ],
+    "minItems": 2,
+    "maxItems": 2,
+    "definitions": {
+        "message_number": {
+            "type": "integer"
+        },
+        "request_body": {
+            "type": "object",
+            "required": [
+                "version", "id", "buf_type", "buf_name", "buf_body", "additional_info"
+            ],
+
+            "properties": {
+                "version": {
+                    "comment": "version of protocol",
+                    "type": "string",
+                    "const": "v1"
+                },
+                "id": {
+                    "comment": "client id",
+                    "type": "integer"
+                },
+                "buf_type": {
+                    "comment": "type of buffer entity",
+                    "type": "string"
+                },
+                "buf_name": {
+                    "comment": "name of buffer",
+                    "type": "string"
+                },
+                "buf_body": {
+                    "comment": "complete buffer entity",
+                    "type": "string"
+                },
+                "additional_info": {
+                    "comment": "some handler specific information",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}
+)";
+
+const std::string requestSchema_v11 = R"(
 {
     "$schema": "http://json-schema/schema#",
     "title": "request schema v1.1",
@@ -86,11 +144,11 @@ const std::string requestSchema_v1 = R"(
                 "version": {
                     "comment": "version of protocol",
                     "type": "string",
-                    "enum": ["v1", "v1.1"]
+                    "const": "v1.1"
                 },
                 "id": {
                     "comment": "client id",
-                    "type": ["string", "integer"]
+                    "type": "string"
                 },
                 "buf_type": {
                     "comment": "type of buffer entity",

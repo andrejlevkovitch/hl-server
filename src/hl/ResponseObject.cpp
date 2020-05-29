@@ -14,17 +14,25 @@
 #define ERROR_MESSAGE_TAG "error_message"
 #define TOKENS_TAG        "tokens"
 
+#define VERSION_V1  "v1"
+#define VERSION_V11 "v1.1"
+
 namespace hl {
 using Json = nlohmann::json;
 
 ResponseSerializer::ResponseSerializer() noexcept
-    : responseValidator_{nullptr} {
-  responseValidator_ = new Validator{};
-  responseValidator_->set_root_schema(Json::parse(responseSchema_v1));
+    : responseValidator_1_{nullptr}
+    , responseValidator_11_{nullptr} {
+  responseValidator_1_ = new Validator{};
+  responseValidator_1_->set_root_schema(Json::parse(responseSchema_v1));
+
+  responseValidator_11_ = new Validator{};
+  responseValidator_11_->set_root_schema(Json::parse(responseSchema_v11));
 }
 
 ResponseSerializer::~ResponseSerializer() noexcept {
-  delete responseValidator_;
+  delete responseValidator_1_;
+  delete responseValidator_11_;
 }
 
 error_code ResponseSerializer::serialize(const ResponseObject &respObj,
@@ -40,11 +48,16 @@ error_code ResponseSerializer::serialize(const ResponseObject &respObj,
       {ERROR_MESSAGE_TAG, respObj.error_message},
   });
 
-  std::visit(
-      [&data](auto &&arg) {
-        data[ID_TAG] = arg;
-      },
-      respObj.id);
+  if (respObj.version == VERSION_V1) { // then we must serialize id as integer
+    data[ID_TAG] = std::atoi(respObj.id.c_str());
+  } else if (respObj.version == VERSION_V11) {
+    data[ID_TAG] = respObj.id;
+  } else {
+    // XXX if you fail here then you has this version in validator schema, but,
+    // for some reason, you don't implement logic for parsing. So, you must fix
+    // that
+    LOG_FAILURE("not impemented version: %1%", respObj.version);
+  }
 
   Json &serializedTokens = data[TOKENS_TAG] = Json::object();
   for (const auto &[group, pos] : respObj.tokens) {
@@ -53,9 +66,25 @@ error_code ResponseSerializer::serialize(const ResponseObject &respObj,
 
 #ifndef NDEBUG
   RRJsonErrorHandler errorHandler;
-  responseValidator_->validate(output, errorHandler);
-  if (errorHandler) {
-    LOG_ERROR("invalid response serialization: %1%", errorHandler.ss.str());
+  if (respObj.version == VERSION_V1) {
+    responseValidator_1_->validate(output, errorHandler);
+    if (errorHandler) {
+      LOG_ERROR("invalid response serialization: %1%", errorHandler.ss.str());
+      return error_code{boost::system::errc::bad_message,
+                        boost::system::system_category()};
+    }
+  } else if (respObj.version == VERSION_V11) {
+    responseValidator_11_->validate(output, errorHandler);
+    if (errorHandler) {
+      LOG_ERROR("invalid response serialization: %1%", errorHandler.ss.str());
+      return error_code{boost::system::errc::bad_message,
+                        boost::system::system_category()};
+    }
+  } else {
+    // XXX if you fail here then you has this version in validator schema,
+    // but, for some reason, you don't implement logic for parsing. So, you
+    // must fix that
+    LOG_ERROR("not impemented version: %1%", respObj.version);
     return error_code{boost::system::errc::bad_message,
                       boost::system::system_category()};
   }

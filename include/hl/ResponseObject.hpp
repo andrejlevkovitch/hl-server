@@ -9,7 +9,7 @@
  * fields are required):
  *
  *     - version       - version of protocol                        (string)
- *     - id            - client id                             (string, integer)
+ *     - id            - client id                                  (string)
  *     - buf_type      - type of buffer which was handle            (string)
  *     - buf_name      - name of buffer which was handle            (string)
  *     - return_code   - in success it is equal to 0                (num)
@@ -21,6 +21,7 @@
  * \note numeration of lines and columns start from 1
  *
  * \see responseSchema_v1
+ * \see responseSchema_v11
  */
 
 #pragma once
@@ -31,7 +32,6 @@
 #include <boost/system/error_code.hpp>
 #include <list>
 #include <string>
-#include <variant>
 
 #define SUCCESS_CODE 0
 #define FAILURE_CODE 1
@@ -48,14 +48,14 @@ using Validator  = nlohmann::json_schema::json_validator;
 
 struct ResponseObject final {
 public:
-  int                            msg_num;
-  std::string                    version;
-  std::variant<int, std::string> id;
-  std::string                    buf_type;
-  std::string                    buf_name;
-  int                            return_code;
-  std::string                    error_message;
-  TokenList                      tokens;
+  int         msg_num;
+  std::string version;
+  std::string id;
+  std::string buf_type;
+  std::string buf_name;
+  int         return_code;
+  std::string error_message;
+  TokenList   tokens;
 };
 
 class ResponseSerializer {
@@ -74,10 +74,93 @@ public:
 private:
   /**\note uses only for debug
    */
-  Validator *responseValidator_;
+  Validator *responseValidator_1_;
+  Validator *responseValidator_11_;
 };
 
 const std::string responseSchema_v1 = R"(
+{
+    "$schema": "http://json-schema/schema#",
+    "title": "response schema v1",
+    "description": "schema for validate response of hl-server",
+
+    "type": "array",
+    "items": [
+      { "$ref": "#/definitions/message_number" },
+      { "$ref": "#/definitions/response_body" }
+    ],
+    "definitions": {
+        "message_number": {
+            "type": "integer"
+        },
+        "response_body": {
+            "type": "object",
+            "required": [
+                "version", "id", "buf_type", "buf_name", "return_code", "error_message", "tokens"
+            ],
+
+            "properties": {
+                "version": {
+                    "comment": "version of protocol",
+                    "type": "string",
+                    "const": "v1"
+                },
+                "id": {
+                    "comment": "client id",
+                    "type": "integer"
+                },
+                "buf_type": {
+                    "comment": "type of buffer entity",
+                    "type": "string"
+                },
+                "buf_name": {
+                    "comment": "name of buffer",
+                    "type": "string"
+                },
+                "return_code": {
+                    "comment": "0 in case of success, otherwise some not null integer value",
+                    "type": "integer"
+                },
+                "error_message": {
+                    "comment": "contains inforamtion about error (if some error caused) ",
+                    "type": "string"
+                },
+                "tokens": {
+                    "comment": "contains dictionary of tokens by token groups",
+                    "$ref": "#/definitions/tokens"
+                }
+            },
+            "additionalProperties": false
+        },
+        "tokens": {
+            "type": "object",
+            "patternProperties": {
+                "^.+$": {
+                    "$ref": "#/definitions/array_of_token_koordinates"
+                }
+            },
+            "additionalProperties": false
+        },
+        "array_of_token_koordinates": {
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/token_koordinate"
+            }
+        },
+        "token_koordinate": {
+            "comment": "contains array of integers with: row, column, token_size",
+            "type": "array",
+            "items": {
+                "type": "integer"
+            },
+            "minItems": 3,
+            "maxItems": 3
+        }
+    }
+}
+)";
+
+const std::string responseSchema_v11 = R"(
 {
     "$schema": "http://json-schema/schema#",
     "title": "response schema v1.1",
@@ -102,11 +185,11 @@ const std::string responseSchema_v1 = R"(
                 "version": {
                     "comment": "version of protocol",
                     "type": "string",
-                    "enum": ["v1", "v1.1"]
+                    "enum": "v1.1"
                 },
                 "id": {
                     "comment": "client id",
-                    "type": ["string", "integer"]
+                    "type": "string"
                 },
                 "buf_type": {
                     "comment": "type of buffer entity",
