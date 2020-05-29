@@ -44,7 +44,8 @@ RequestDeserializer::deserialize(std::string_view request,
     Json &info     = msg[1];
 
     reqObj.version = info[VERSION_TAG];
-    if (info.type() == Json::value_t::number_integer) {
+    if (info[ID_TAG].type() == Json::value_t::number_unsigned ||
+        info[ID_TAG].type() == Json::value_t::number_integer) {
       reqObj.id = info[ID_TAG].get<int>();
     } else {
       reqObj.id = info[ID_TAG].get<std::string>();

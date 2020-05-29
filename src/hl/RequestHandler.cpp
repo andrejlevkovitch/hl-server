@@ -68,7 +68,7 @@ RequestHandler::handle(const std::string &requestBuffer,
     // send error message for client
     responseObject = ResponseObject{0,
                                     BASE_VERSION_PROTOCOL,
-                                    0,
+                                    "",
                                     "",
                                     "",
                                     FAILURE_CODE,
