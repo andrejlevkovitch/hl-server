@@ -24,16 +24,9 @@ RequestHandler::~RequestHandler() noexcept {
   delete responseSerializer_;
 }
 
-ss::error_code
-RequestHandler::handle(const std::string &requestBuffer,
-                       OUTPUT std::string &responseBuffer) noexcept {
-  // in this case we has partial data at the end, so just return partial data
-  // error
-  if (requestBuffer.back() != DATA_DELIMITER) {
-    LOG_WARNING("request buffer contains partial data");
-    return ss::error::make_error_code(ss::error::SessionErrors::PartialData);
-  }
-
+ss::error_code RequestHandler::handle(const std::string &requestBuffer,
+                                      OUTPUT std::string &responseBuffer,
+                                      OUTPUT size_t &ignoreCount) noexcept {
   // XXX because request buffer can contains several requests we need tokenize
   // it and handle only latest. All request before are considered as expired
   static const std::regex    regByDelimiter{DATA_DELIMITER};
@@ -48,7 +41,16 @@ RequestHandler::handle(const std::string &requestBuffer,
   }
 
   if (ignoreRequestCounter != 0) {
-    LOG_INFO("was ignored %1% requests in buffer", ignoreRequestCounter);
+    LOG_WARNING("was ignored %1% requests in buffer", ignoreRequestCounter);
+  }
+
+  // in this case we has partial data at the end, so just return partial data
+  // error
+  if (requestBuffer.back() != DATA_DELIMITER) {
+    LOG_WARNING("request buffer contains partial data");
+
+    ignoreCount = std::distance(requestBuffer.begin(), requestIterator->first);
+    return ss::error::make_error_code(ss::error::SessionErrors::PartialData);
   }
 
   // and handle latest request

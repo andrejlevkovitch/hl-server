@@ -21,7 +21,8 @@ public:
    * all requests before are considered as expired
    */
   ss::error_code handle(const std::string &requestBuffer,
-                        OUTPUT std::string &responseBuffer) noexcept override;
+                        OUTPUT std::string &responseBuffer,
+                        OUTPUT size_t &ingoreCount) noexcept override;
 
 private:
   RequestDeserializer *requestDeserializer_;

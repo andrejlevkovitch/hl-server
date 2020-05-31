@@ -1,4 +1,6 @@
 // errors.hpp
+/**\file
+ */
 
 #pragma once
 

@@ -20,10 +20,20 @@ public:
    * \warning if response is empty it handles as error: socket will be closed
    *
    * \note request buffer can contains several requests and/or partial data. In
-   * case of partial data you need return SesstionErrors::Partialdata error for
+   * case of partial data you need return SesstionErrors::PartialData error for
    * reading more.
+   *
+   * \param ignoreCount has a sence if method return PartialData error: if is 0
+   * (by default), then all information will be saved in request buffer,
+   * otherwise all information from begin to begin + ignoreCount will be ignore
+   * and in requestBuffer will be saved only information after begin +
+   * ignoreCount
+   *
+   * \note if ignoreCount bigger then current size of request buffer, then all
+   * buffer will clean
    */
   virtual error_code handle(const std::string &requestBuffer,
-                            OUTPUT std::string &responseBuffer) noexcept = 0;
+                            OUTPUT std::string &responseBuffer,
+                            OUTPUT size_t &ignoreCount) noexcept = 0;
 };
 } // namespace ss
