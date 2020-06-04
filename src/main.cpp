@@ -45,8 +45,8 @@ int main(int argc, char *argv[]) {
       po::value<std::string>()->required()->default_value(DEFAULT_HOST),
       "ip for server")(
       PORT_ARG,
-      po::value<uint>()->required()->default_value(DEFAULT_PORT),
-      "port for server")(
+      po::value<ushort>()->required()->default_value(DEFAULT_PORT),
+      "port for server (note that port must be a 16bit value)")(
       LIMIT_SESSIONS,
       po::value<uint>()->required()->default_value(DEFAULT_LIMIT_SESSIONS),
       "maximum capacity of opened connections, 0 is special value, which means "
@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   po::notify(argMap);
 
   std::string host             = argMap[HOST_ARG].as<std::string>();
-  uint        port             = argMap[PORT_ARG].as<uint>();
+  uint        port             = argMap[PORT_ARG].as<ushort>();
   uint        maxSessionsCount = argMap[LIMIT_SESSIONS].as<uint>();
   uint        threadsCount     = argMap[THREADS_COUNT].as<uint>();
 

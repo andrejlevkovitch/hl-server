@@ -61,7 +61,7 @@ public:
 
   void run(std::shared_ptr<ServerImp> self,
            std::string_view           host,
-           unsigned int               port) noexcept {
+           unsigned short             port) noexcept {
     error_code    resolveError;
     tcp::resolver resolver{Context::ioContext()};
     auto          resolvIter =
@@ -199,7 +199,7 @@ Server::~Server() noexcept {
   LOG_DEBUG("Server destructor");
 }
 
-void Server::run(std::string_view ip, unsigned int port) noexcept {
+void Server::run(std::string_view ip, unsigned short port) noexcept {
   LOG_DEBUG("Server run");
   imp_->run(imp_, ip, port);
 }

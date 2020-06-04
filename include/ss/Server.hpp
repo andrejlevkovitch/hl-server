@@ -15,9 +15,10 @@ public:
 
   /**\brief start server for processing
    *
-   * \note it does not start io_context obejt! You must start it manually
+   * \note it does not start io_context object! You must start it manually after
+   * run the server object
    */
-  void run(std::string_view host, unsigned int port) noexcept;
+  void run(std::string_view host, unsigned short port) noexcept;
 
 private:
   std::shared_ptr<ServerImp> imp_;
