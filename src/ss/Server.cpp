@@ -148,6 +148,15 @@ private:
 
           // create and start new session
           {
+            error_code                     err;
+            [[maybe_unused]] tcp::endpoint remote_endpoint =
+                sock.remote_endpoint(err);
+            if (err.failed()) {
+              LOG_ERROR(err.message());
+              continue;
+            }
+            LOG_INFO("accept conntection from: %1%", remote_endpoint);
+
             Session *session =
                 sessionPool_.append(std::make_unique<Session>(std::move(sock)));
             LOG_DEBUG("new session added");
