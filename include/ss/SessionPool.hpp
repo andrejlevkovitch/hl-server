@@ -19,7 +19,6 @@ public:
   /**\return pointer to inserted session or nullptr if insertion failed
    */
   Session *append(std::unique_ptr<Session> session) noexcept;
-  void     remove(const std::string &uuid) noexcept;
 
   size_t size() const noexcept;
 

@@ -128,10 +128,6 @@ Session *SessionPool::append(std::unique_ptr<Session> session) noexcept {
   return inserted;
 }
 
-void SessionPool::remove(const std::string &uuid) noexcept {
-  imp_->remove(uuids::string_generator{}(uuid));
-}
-
 size_t SessionPool::size() const noexcept {
   return imp_->size();
 }
