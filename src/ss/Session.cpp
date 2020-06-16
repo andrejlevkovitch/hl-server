@@ -8,6 +8,7 @@
 #include <boost/asio/write.hpp>
 #include <boost/asio/yield.hpp>
 #include <iterator>
+#include <mutex>
 #include <ss/errors.hpp>
 
 #define REQUEST_BUFFER_RESERVED  1024 * 1000 // 1Mb
@@ -51,9 +52,16 @@ public:
     this->operator()(std::move(self), error_code{}, 0);
   }
 
+  /**\note if we call this method from Session, then, after canceling
+   * operations, associated with socket, this method will be called from
+   * io_context thread - we must exclude concurency here, so use mutex here
+   */
   void close() noexcept {
-    LOG_DEBUG("try close session");
+    std::lock_guard<std::mutex> lock{closeMutex_};
+
     if (sock_.is_open()) {
+      LOG_DEBUG("try close session");
+
       error_code error;
 
       sock_.cancel(error);
@@ -70,11 +78,13 @@ public:
       if (error.failed()) {
         LOG_ERROR(error.message());
       }
-    }
+    } // otherwise session alredy closed
 
     // emit signal about closing session
-    atClose_();
-    closeConnection.disconnect();
+    if (closeConnection.connected()) {
+      atClose_();
+      closeConnection.disconnect();
+    }
   }
 
 private:
@@ -180,6 +190,7 @@ private:
   std::string res_;
 
   CloseSignal atClose_;
+  std::mutex  closeMutex_;
 
   Handler requestHandler_;
 };
