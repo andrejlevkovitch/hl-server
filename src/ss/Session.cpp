@@ -59,9 +59,9 @@ public:
   void close() noexcept {
     std::lock_guard<std::mutex> lock{closeMutex_};
 
-    if (sock_.is_open()) {
-      LOG_DEBUG("try close session");
+    LOG_DEBUG("try close session");
 
+    if (sock_.is_open()) {
       error_code error;
 
       sock_.cancel(error);
@@ -169,6 +169,9 @@ private:
     } else if (error == asio::error::eof) {
       LOG_DEBUG("client close socket");
       close();
+    } else if (error == asio::error::operation_aborted) {
+      LOG_DEBUG("session canceled");
+      // XXX close already called
     } else {
       LOG_WARNING(error.message());
       close();

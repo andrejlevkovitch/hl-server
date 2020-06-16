@@ -184,6 +184,8 @@ private:
           }
         }
       }
+    } else if (error == asio::error::operation_aborted) {
+      LOG_DEBUG("accepting canceled");
     } else {
       LOG_ERROR(error.message());
     }
