@@ -11,19 +11,6 @@ const std::chrono::time_point<std::chrono::system_clock> time_log_placeholder{};
 namespace logs {
 class LogLevel final {
 public:
-  static void setMin(logs::Severity min) {
-    LogLevel::minLogLevel() = min;
-  }
-
-  static logs::Severity getMin() {
-    return LogLevel::minLogLevel();
-  }
-
-private:
-  static logs::Severity &minLogLevel() {
-    static logs::Severity retval;
-    return retval;
-  }
 };
 
 class CurrentLogger final : public BasicLogger {
@@ -40,7 +27,7 @@ public:
            std::chrono::time_point<std::chrono::system_clock> timePoint,
            std::thread::id                                    threadId,
            boost::format message) noexcept override {
-    if (severity >= LogLevel::getMin()) {
+    if (severity >= this->getMinLogLevel()) {
       std::cerr << getRecord(severity,
                              fileName,
                              lineNumber,
@@ -55,6 +42,17 @@ public:
       exit(EXIT_FAILURE);
     }
   }
+
+  void setMinLogLevel(logs::Severity min) {
+    this->minLogLevel_ = min;
+  }
+
+  logs::Severity getMinLogLevel() const {
+    return this->minLogLevel_;
+  }
+
+private:
+  logs::Severity minLogLevel_;
 };
 } // namespace logs
 

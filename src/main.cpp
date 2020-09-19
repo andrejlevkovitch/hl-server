@@ -70,9 +70,9 @@ int main(int argc, char *argv[]) {
   }
 
   if (argMap.count(VERBOSE_FLAG)) {
-    logs::LogLevel::setMin(logs::Severity::Info);
+    logs::CurrentLogger::get().setMinLogLevel(logs::Severity::Info);
   } else {
-    logs::LogLevel::setMin(logs::Severity::Error);
+    logs::CurrentLogger::get().setMinLogLevel(logs::Severity::Error);
   }
 
   po::notify(argMap);
