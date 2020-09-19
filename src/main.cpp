@@ -23,7 +23,7 @@
 #define SHORT_HELP_FLAG    "h"
 
 #define DEFAULT_HOST           "localhost"
-#define DEFAULT_PORT           9173
+#define DEFAULT_PORT           53827
 #define DEFAULT_LIMIT_SESSIONS 0
 #define DEFAULT_THREADS_COUNT  1
 
