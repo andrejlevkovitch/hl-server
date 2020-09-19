@@ -17,6 +17,10 @@
 #define PORT_ARG       "port"
 #define LIMIT_SESSIONS "lim_conn"
 #define THREADS_COUNT  "threads"
+#define VERBOSE_FLAG   "verbose"
+
+#define SHORT_VERBOSE_FLAG "v"
+#define SHORT_HELP_FLAG    "h"
 
 #define DEFAULT_HOST           "localhost"
 #define DEFAULT_PORT           9173
@@ -40,7 +44,7 @@ int main(int argc, char *argv[]) {
   po::options_description options;
 
   // add options for server
-  options.add_options()(HELP_FLAG, "produce help message")(
+  options.add_options()(HELP_FLAG "," SHORT_HELP_FLAG, "produce help message")(
       HOST_ARG,
       po::value<std::string>()->required()->default_value(DEFAULT_HOST),
       "ip for server")(
@@ -53,7 +57,9 @@ int main(int argc, char *argv[]) {
       "that capacity of sessions not limited")(
       THREADS_COUNT,
       po::value<uint>()->required()->default_value(DEFAULT_THREADS_COUNT),
-      "capacity of server handling threads");
+      "capacity of server handling threads")(VERBOSE_FLAG
+                                             "," SHORT_VERBOSE_FLAG,
+                                             "print logs");
 
   po::variables_map argMap;
   po::store(po::parse_command_line(argc, argv, options), argMap);
@@ -61,6 +67,12 @@ int main(int argc, char *argv[]) {
   if (argMap.count(HELP_FLAG)) {
     std::cout << options << std::endl;
     return EXIT_SUCCESS;
+  }
+
+  if (argMap.count(VERBOSE_FLAG)) {
+    logs::LogLevel::setMin(logs::Severity::Info);
+  } else {
+    logs::LogLevel::setMin(logs::Severity::Error);
   }
 
   po::notify(argMap);
