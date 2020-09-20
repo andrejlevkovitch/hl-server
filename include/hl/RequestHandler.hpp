@@ -22,7 +22,7 @@ public:
    */
   ss::error_code handle(const std::string &requestBuffer,
                         OUTPUT std::string &responseBuffer,
-                        OUTPUT size_t &ingoreCount) noexcept override;
+                        OUTPUT size_t &ignoreLength) noexcept override;
 
 private:
   RequestDeserializer *requestDeserializer_;

@@ -1,21 +1,9 @@
 // ResponseObject.cpp
 
 #include "hl/ResponseObject.hpp"
-#include "RRJsonErrorHandler.hpp"
 #include "logs.hpp"
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
-
-#define VERSION_TAG       "version"
-#define ID_TAG            "id"
-#define BUFFER_TYPE_TAG   "buf_type"
-#define BUFFER_NAME_TAG   "buf_name"
-#define RETURN_CODE_TAG   "return_code"
-#define ERROR_MESSAGE_TAG "error_message"
-#define TOKENS_TAG        "tokens"
-
-#define VERSION_V1  "v1"
-#define VERSION_V11 "v1.1"
 
 namespace hl {
 using Json = nlohmann::json;
@@ -48,11 +36,14 @@ error_code ResponseSerializer::serialize(const ResponseObject &respObj,
       {ERROR_MESSAGE_TAG, respObj.error_message},
   });
 
-  if (respObj.version == VERSION_V1) { // then we must serialize id as integer
+  switch (getVersionEnum(respObj.version)) {
+  case Version::V1:
     data[ID_TAG] = std::atoi(respObj.id.c_str());
-  } else if (respObj.version == VERSION_V11) {
+    break;
+  case Version::V11:
     data[ID_TAG] = respObj.id;
-  } else {
+    break;
+  default:
     // XXX if you fail here then you has this version in validator schema, but,
     // for some reason, you don't implement logic for parsing. So, you must fix
     // that
@@ -65,26 +56,24 @@ error_code ResponseSerializer::serialize(const ResponseObject &respObj,
   }
 
 #ifndef NDEBUG
-  RRJsonErrorHandler errorHandler;
-  if (respObj.version == VERSION_V1) {
-    responseValidator_1_->validate(output, errorHandler);
-    if (errorHandler) {
-      LOG_ERROR("invalid response serialization: %1%", errorHandler.ss.str());
-      return error_code{boost::system::errc::bad_message,
-                        boost::system::system_category()};
+  try {
+    switch (getVersionEnum(respObj.version)) {
+    case Version::V1:
+      responseValidator_1_->validate(output);
+      break;
+    case Version::V11:
+      responseValidator_11_->validate(output);
+      break;
+    default:
+      // XXX if you fail here then you has this version in validator schema,
+      // but, for some reason, you don't implement logic for parsing. So, you
+      // must fix that
+      LOG_THROW(std::invalid_argument,
+                "invalid protocol version: %1%",
+                respObj.version);
     }
-  } else if (respObj.version == VERSION_V11) {
-    responseValidator_11_->validate(output, errorHandler);
-    if (errorHandler) {
-      LOG_ERROR("invalid response serialization: %1%", errorHandler.ss.str());
-      return error_code{boost::system::errc::bad_message,
-                        boost::system::system_category()};
-    }
-  } else {
-    // XXX if you fail here then you has this version in validator schema,
-    // but, for some reason, you don't implement logic for parsing. So, you
-    // must fix that
-    LOG_ERROR("not impemented version: %1%", respObj.version);
+  } catch (std::exception &e) {
+    LOG_ERROR(e.what());
     return error_code{boost::system::errc::bad_message,
                       boost::system::system_category()};
   }

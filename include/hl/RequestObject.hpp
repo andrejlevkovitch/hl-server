@@ -19,6 +19,7 @@
  * \see requestSchema_v11
  */
 
+#include "RRData.hpp"
 #include <boost/system/error_code.hpp>
 #include <misc.hpp>
 #include <string>
@@ -60,116 +61,4 @@ private:
   Validator *requestValidator_1_;
   Validator *requestValidator_11_;
 };
-
-const std::string requestSchema_v1 = R"(
-{
-    "$schema": "http://json-schema/schema#",
-    "title": "request schema v1",
-    "description": "schema for validate requests for hl-server",
-
-    "type": "array",
-    "items": [
-      { "$ref": "#/definitions/message_number" },
-      { "$ref": "#/definitions/request_body" }
-    ],
-    "minItems": 2,
-    "maxItems": 2,
-    "definitions": {
-        "message_number": {
-            "type": "integer"
-        },
-        "request_body": {
-            "type": "object",
-            "required": [
-                "version", "id", "buf_type", "buf_name", "buf_body", "additional_info"
-            ],
-
-            "properties": {
-                "version": {
-                    "comment": "version of protocol",
-                    "type": "string",
-                    "const": "v1"
-                },
-                "id": {
-                    "comment": "client id",
-                    "type": "integer"
-                },
-                "buf_type": {
-                    "comment": "type of buffer entity",
-                    "type": "string"
-                },
-                "buf_name": {
-                    "comment": "name of buffer",
-                    "type": "string"
-                },
-                "buf_body": {
-                    "comment": "complete buffer entity",
-                    "type": "string"
-                },
-                "additional_info": {
-                    "comment": "some handler specific information",
-                    "type": "string"
-                }
-            },
-            "additionalProperties": false
-        }
-    }
-}
-)";
-
-const std::string requestSchema_v11 = R"(
-{
-    "$schema": "http://json-schema/schema#",
-    "title": "request schema v1.1",
-    "description": "schema for validate requests for hl-server",
-
-    "type": "array",
-    "items": [
-      { "$ref": "#/definitions/message_number" },
-      { "$ref": "#/definitions/request_body" }
-    ],
-    "minItems": 2,
-    "maxItems": 2,
-    "definitions": {
-        "message_number": {
-            "type": "integer"
-        },
-        "request_body": {
-            "type": "object",
-            "required": [
-                "version", "id", "buf_type", "buf_name", "buf_body", "additional_info"
-            ],
-
-            "properties": {
-                "version": {
-                    "comment": "version of protocol",
-                    "type": "string",
-                    "const": "v1.1"
-                },
-                "id": {
-                    "comment": "client id",
-                    "type": "string"
-                },
-                "buf_type": {
-                    "comment": "type of buffer entity",
-                    "type": "string"
-                },
-                "buf_name": {
-                    "comment": "name of buffer",
-                    "type": "string"
-                },
-                "buf_body": {
-                    "comment": "complete buffer entity",
-                    "type": "string"
-                },
-                "additional_info": {
-                    "comment": "some handler specific information",
-                    "type": "string"
-                }
-            },
-            "additionalProperties": false
-        }
-    }
-}
-)";
 } // namespace hl

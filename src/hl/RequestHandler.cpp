@@ -8,8 +8,7 @@
 #include <exception>
 #include <regex>
 
-#define DATA_DELIMITER        '\n'
-#define BASE_VERSION_PROTOCOL "v1.1"
+#define DATA_DELIMITER '\n'
 
 namespace hl {
 RequestHandler::RequestHandler() noexcept
@@ -26,7 +25,7 @@ RequestHandler::~RequestHandler() noexcept {
 
 ss::error_code RequestHandler::handle(const std::string &requestBuffer,
                                       OUTPUT std::string &responseBuffer,
-                                      OUTPUT size_t &ignoreCount) noexcept {
+                                      OUTPUT size_t &ignoreLength) noexcept {
   // XXX because request buffer can contains several requests we need tokenize
   // it and handle only latest. All request before are considered as expired
   static const std::regex    regByDelimiter{DATA_DELIMITER};
@@ -49,7 +48,7 @@ ss::error_code RequestHandler::handle(const std::string &requestBuffer,
   if (requestBuffer.back() != DATA_DELIMITER) {
     LOG_WARNING("request buffer contains partial data");
 
-    ignoreCount = std::distance(requestBuffer.begin(), requestIterator->first);
+    ignoreLength = std::distance(requestBuffer.begin(), requestIterator->first);
     return ss::error::make_error_code(ss::error::SessionErrors::PartialData);
   }
 
