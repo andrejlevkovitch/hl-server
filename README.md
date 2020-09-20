@@ -10,6 +10,27 @@ See [test hl client](test/simple_hl_client)
 
 See [vim-hl-client](https://github.com/andrejlevkovitch/vim-hl-client)
 
+## Requirements
+
+- `c++` compiler with support `17` standard
+
+- `boost`
+
+- [nlohmann-json](https://github.com/nlohmann/json) - upload automaticly
+
+- [json-schema-validator](https://github.com/pboettch/json-schema-validator) - upload automaticly
+
+
+## Compilation
+
+```sh
+mkdir build
+cd build
+cmake ..
+cmake --build . -- -j4
+```
+
+
 ## Bugs
 
 For some reason you can get `ASTReadError` with using flags:
