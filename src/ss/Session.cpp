@@ -108,36 +108,33 @@ private:
           {
             LOG_DEBUG("handle request");
 
-            size_t     ignoreCount = 0;
-            error_code err = requestHandler_->handle(req_, res_, ignoreCount);
+            size_t     ignoreLength = 0;
+            error_code err = requestHandler_->handle(req_, res_, ignoreLength);
             if (err.failed() && error::isSessionErrorCategory(err.category()) &&
                 err.value() == error::SessionErrors::PartialData) {
               // so we need read more
               LOG_WARNING(err.message());
 
-              if (ignoreCount != 0) {
-                if (ignoreCount >= req_.size()) {
+              if (ignoreLength != 0) {
+                if (ignoreLength >= req_.size()) {
                   LOG_WARNING("ignore all request buffer");
 
                   req_.clear(); // clear all buffer
                 } else {
                   LOG_WARNING("ignore: %1.3fKb bytes in request buffer",
-                              ignoreCount / 1024);
+                              ignoreLength / 1024);
 
-                  // note that we can't just set substring to request buffer,
-                  // because buffer has big allocated size, and in this case
-                  // we will lost all allocated memory
-                  auto forSave = req_.substr(ignoreCount);
-                  req_.clear();
-                  std::copy(forSave.begin(),
-                            forSave.end(),
-                            std::back_inserter(req_));
+                  // XXX we can't just set substring to request buffer, because
+                  // buffer has big allocated size, and in this case we will
+                  // lost all allocated memory. So we need copy data
+                  req_.erase(0, ignoreLength);
                 }
               }
 
               continue;
             }
 
+            // unexpected error
             if (err.failed()) {
               LOG_ERROR(err.message());
               close();

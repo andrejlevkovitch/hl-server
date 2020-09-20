@@ -23,17 +23,17 @@ public:
    * case of partial data you need return SesstionErrors::PartialData error for
    * reading more.
    *
-   * \param ignoreCount has a sence if method return PartialData error: if is 0
+   * \param ignoreLength has a sence if method return PartialData error: if is 0
    * (by default), then all information will be saved in request buffer,
-   * otherwise all information from begin to begin + ignoreCount will be ignore
+   * otherwise all information from begin to begin + ignoreLength will be ignore
    * and in requestBuffer will be saved only information after begin +
-   * ignoreCount
+   * ignoreLength
    *
-   * \note if ignoreCount bigger then current size of request buffer, then all
+   * \note if ignoreLength bigger then current size of request buffer, then all
    * buffer will clean
    */
   virtual error_code handle(const std::string &requestBuffer,
                             OUTPUT std::string &responseBuffer,
-                            OUTPUT size_t &ignoreCount) noexcept = 0;
+                            OUTPUT size_t &ignoreLength) noexcept = 0;
 };
 } // namespace ss
