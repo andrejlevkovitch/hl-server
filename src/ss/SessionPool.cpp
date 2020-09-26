@@ -58,21 +58,28 @@ public:
   }
 
   void remove(const uuids::uuid &uuid) noexcept {
-    std::lock_guard<std::mutex> lock{mutex_};
+    bool sessionClosed = false;
+    {
+      std::lock_guard<std::mutex> lock{mutex_};
 
-    closed_.clear();
-    if (auto found = sessions_.find(uuid); found != sessions_.end()) {
-      // XXX we can not remove Session, because in this case we will call
-      // destructor of session before it out of signal function.
-      // So, we move the session to closed_ pool, which clear every time at
-      // beginning of remove call
-      closed_.insert(sessions_.extract(found));
-      LOG_DEBUG("remove session: %1%", uuid);
-      LOG_DEBUG("now opened:     %1%", sessions_.size());
+      closed_.clear();
+      if (auto found = sessions_.find(uuid); found != sessions_.end()) {
+        // XXX we can not remove Session, because in this case we will call
+        // destructor of session before it out of signal function.
+        // So, we move the session to closed_ pool, which clear every time at
+        // beginning of remove call
+        closed_.insert(sessions_.extract(found));
+        LOG_DEBUG("remove session: %1%", uuid);
+        LOG_DEBUG("now opened:     %1%", sessions_.size());
 
+        sessionClosed = true;
+      } else {
+        LOG_ERROR("try remove not existing session: %1%", uuid);
+      }
+    }
+
+    if (sessionClosed) {
       atSessionClose_();
-    } else {
-      LOG_ERROR("try remove not existing session: %1%", uuid);
     }
   }
 
