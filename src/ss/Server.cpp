@@ -35,6 +35,11 @@ public:
       LOG_DEBUG("stop acceptor");
       if (acceptor_.is_open()) {
         this->stopAccepting();
+        error_code err;
+        acceptor_.close(err);
+        if (err.failed()) {
+          LOG_ERROR(err.message());
+        }
       }
 
       // at second - close already opened connections
@@ -50,8 +55,7 @@ public:
     // again after removing some session from pool
     if (maxSessionCount_ != 0) {
       sessionPool_.atSessionClose.connect([this] {
-        if (!acceptor_.is_open() &&
-            this->maxSessionCount_ > this->sessionPool_.size()) {
+        if (this->maxSessionCount_ > this->sessionPool_.size()) {
           std::shared_ptr<ServerImp> self = this->shared_from_this();
           this->startAccepting(std::move(self));
         }
@@ -62,75 +66,73 @@ public:
   void run(std::shared_ptr<ServerImp> self,
            std::string_view           host,
            unsigned short             port) noexcept {
-    error_code    resolveError;
-    tcp::resolver resolver{Context::ioContext()};
-    auto          resolvIter =
-        resolver.resolve(tcp::v4(), host, std::to_string(port), resolveError);
-    if (resolveError.failed()) {
-      LOG_FAILURE(resolveError.message());
+    error_code                  error;
+    tcp::resolver               resolver{Context::ioContext()};
+    tcp::resolver::results_type resolvResults =
+        resolver.resolve(tcp::v4(), host, std::to_string(port), error);
+    if (error.failed()) {
+      LOG_FAILURE(error.message());
     }
 
-    endpoint_ = resolvIter->endpoint();
-    LOG_DEBUG("listening endpoint: %1%", endpoint_);
+    tcp protocol = resolvResults->endpoint().protocol();
+    acceptor_.open(protocol, error);
+    if (error.failed()) {
+      LOG_FAILURE(error.message());
+    }
+
+    // XXX after closing server with some client connected tcp socket on
+    // server side will be set in TIME_WAIT (see `netstat -ap`). This is a
+    // normal (for tcp socket), but in this case we can not bind the address.
+    // So we need set this option for acceptor
+    acceptor_.set_option(tcp::acceptor::reuse_address{true}, error);
+    if (error.failed()) {
+      LOG_FAILURE(error.message());
+    }
+
+    bool binded = false;
+    for (auto resolvIter = resolvResults.begin();
+         resolvIter != resolvResults.end();
+         ++resolvIter) {
+      tcp::endpoint endpoint = resolvIter->endpoint();
+      acceptor_.bind(resolvIter->endpoint(), error);
+      if (error.failed() == false) {
+        LOG_INFO("listen endpoint: %1%", endpoint);
+        binded = true;
+        break;
+      } else {
+        LOG_ERROR(error.message());
+      }
+    }
+
+    if (binded == false) {
+      LOG_FAILURE("can't bind any endpoint");
+    }
+
+    acceptor_.listen(tcp::socket::max_listen_connections, error);
+    if (error.failed()) {
+      LOG_FAILURE(error.message());
+    }
 
     this->startAccepting(std::move(self));
   }
 
 private:
   void startAccepting(std::shared_ptr<ServerImp> self) noexcept {
-    if (!acceptor_.is_open()) {
-      LOG_DEBUG("start accepting");
+    LOG_DEBUG("start accepting");
 
-      error_code error;
-      acceptor_.open(endpoint_.protocol(), error);
-      if (error.failed()) {
-        LOG_FAILURE(error.message());
-      }
-
-      // XXX after closing server with some client connected tcp socket on
-      // server side will be set in TIME_WAIT (see `netstat -ap`). This is a
-      // normal (for tcp socket), but in this case we can not bind the address.
-      // So we need set this option for acceptor
-      acceptor_.set_option(tcp::acceptor::reuse_address{true}, error);
-      if (error.failed()) {
-        LOG_FAILURE(error.message());
-      }
-
-      acceptor_.bind(endpoint_, error);
-      if (error.failed()) {
-        LOG_FAILURE(error.message());
-      }
-
-      acceptor_.listen(tcp::socket::max_listen_connections, error);
-      if (error.failed()) {
-        LOG_FAILURE(error.message());
-      }
-
-      // start acceptor asynchronously
-      this->doAccept(std::move(self),
-                     error_code{},
-                     tcp::socket{Context::ioContext()});
-    } else {
-      LOG_ERROR("call start accepting when acceptor already started");
-    }
+    // start acceptor asynchronously
+    this->doAccept(std::move(self),
+                   error_code{},
+                   tcp::socket{Context::ioContext()});
   }
 
   void stopAccepting() noexcept {
-    if (acceptor_.is_open()) {
-      LOG_DEBUG("stop accepting");
-      error_code error;
+    LOG_DEBUG("stop accepting");
+    error_code error;
 
-      acceptor_.cancel(error);
-      if (error.failed()) {
-        LOG_ERROR(error.message());
-      }
-
-      acceptor_.close(error);
-      if (error.failed()) {
-        LOG_ERROR(error.message());
-      }
-    } else {
-      LOG_ERROR("stop accepting when acceptor already closed");
+    acceptor_.cancel(error);
+    if (error.failed()) {
+      LOG_ERROR(error.message());
     }
   }
 
@@ -195,7 +197,6 @@ private:
   asio::signal_set sigSet_;
 
   tcp::acceptor acceptor_;
-  tcp::endpoint endpoint_;
 
   SessionPool sessionPool_;
   size_t      maxSessionCount_;
