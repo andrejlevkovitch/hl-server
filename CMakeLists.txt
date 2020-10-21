@@ -45,12 +45,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   nlohmann_json_schema_validator
   ${Clang_LIBRARY}
   stdc++fs
+  simple_logs
   )
 target_include_directories(${PROJECT_NAME} PRIVATE
   include
   ${LLVM_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/third-party
   )
 
 # needed for colorize logs int console
