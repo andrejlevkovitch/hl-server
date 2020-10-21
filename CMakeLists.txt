@@ -12,7 +12,8 @@ add_subdirectory(third-party)
 find_package(Boost COMPONENTS program_options stacktrace_backtrace REQUIRED)
 find_package(Threads REQUIRED)
 find_package(LLVM REQUIRED)
-find_package(Clang REQUIRED)
+
+find_library(Clang_LIBRARY NAMES clang HINTS ${LLVM_LIBRARY_DIRS})
 
 set(PROJECT_SRC
   src/main.cpp
@@ -42,12 +43,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   ${Boost_LIBRARIES}
   nlohmann_json::nlohmann_json
   nlohmann_json_schema_validator
-  libclang
+  ${Clang_LIBRARY}
   stdc++fs
   )
 target_include_directories(${PROJECT_NAME} PRIVATE
   include
-  ${CLANG_INCLUDE_DIRS}
+  ${LLVM_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/third-party
   )
