@@ -71,9 +71,10 @@ int main(int argc, char *argv[]) {
   }
 
   if (argMap.count(VERBOSE_FLAG)) {
-    logs::CurrentLogger::get().setMinLogLevel(logs::Severity::Info);
+    LOGGER.setFilter(logs::Severity::Placeholder >=
+                     logs::Severity::Info); // all logs
   } else {
-    logs::CurrentLogger::get().setMinLogLevel(logs::Severity::Error);
+    LOGGER.setFilter(logs::Severity::Placeholder >= logs::Severity::Error);
   }
 
   po::notify(argMap);
