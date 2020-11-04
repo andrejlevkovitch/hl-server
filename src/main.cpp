@@ -70,14 +70,32 @@ int main(int argc, char *argv[]) {
     return EXIT_SUCCESS;
   }
 
+  po::notify(argMap);
+
+
+  // init logger
+  auto cerrBackend   = std::make_shared<logs::TextStreamBackend>(std::cerr);
+  auto errorFrontend = std::make_shared<logs::StandardFrontend>();
+  errorFrontend->setFilter(logs::Severity::Placeholder >=
+                           logs::Severity::Error);
+  LOGGER_ADD_SINK(errorFrontend, cerrBackend);
+
   if (argMap.count(VERBOSE_FLAG)) {
-    LOGGER.setFilter(logs::Severity::Placeholder >=
-                     logs::Severity::Info); // all logs
-  } else {
-    LOGGER.setFilter(logs::Severity::Placeholder >= logs::Severity::Error);
+    auto coutBackend   = std::make_shared<logs::TextStreamBackend>(std::cout);
+    auto debugFrontend = std::make_shared<logs::StandardFrontend>();
+    debugFrontend->setFilter(
+        logs::Severity::Placeholder == logs::Severity::Info ||
+        logs::Severity::Placeholder == logs::Severity::Debug); // all logs
+
+    auto warnFrontend = std::make_shared<logs::StandardFrontend>();
+    warnFrontend->setFilter(
+        logs::Severity::Placeholder == logs::Severity::Warning ||
+        logs::Severity::Placeholder == logs::Severity::Throw);
+
+    LOGGER_ADD_SINK(debugFrontend, coutBackend);
+    LOGGER_ADD_SINK(warnFrontend, cerrBackend);
   }
 
-  po::notify(argMap);
 
   std::string host             = argMap[HOST_ARG].as<std::string>();
   uint        port             = argMap[PORT_ARG].as<ushort>();
@@ -91,6 +109,7 @@ int main(int argc, char *argv[]) {
   LOG_INFO("host:     %1%", host);
   LOG_INFO("port:     %1%", port);
   LOG_INFO("threads:  %1%", threadsCount);
+
 
   // run context for several threads
   ss::Context::init(threadsCount);
@@ -116,7 +135,7 @@ int main(int argc, char *argv[]) {
     thread.join();
   });
 
-  LOG_DEBUG("exit");
+  LOG_INFO("exit");
 
   return EXIT_SUCCESS;
 }
