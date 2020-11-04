@@ -53,10 +53,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}
   )
 
-# needed for colorize logs int console
-if(COLORIZED)
-  target_compile_definitions(${PROJECT_NAME} PRIVATE -DCOLORIZED)
-endif()
-
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gen/default_cpp_flags.cmake.hpp ${CMAKE_CURRENT_BINARY_DIR}/gen/default_cpp_flags.hpp)

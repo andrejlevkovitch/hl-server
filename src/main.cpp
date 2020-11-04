@@ -29,6 +29,7 @@
 
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
+
 void sigsegv_handler([[maybe_unused]] int signal) {
   // XXX note that backtrace printing right only if program compiled with -g
   boost::stacktrace::stacktrace trace{};
