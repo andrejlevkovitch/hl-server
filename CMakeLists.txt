@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.12)
 
 project(hl-server)
 
+
+include(cmake/version.cmake)
 include(cmake/build.cmake)
 include(cmake/doxygen.cmake)
 
@@ -54,4 +56,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   )
 
 
+# generate default flags for clang tokenizer
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gen/default_cpp_flags.cmake.hpp ${CMAKE_CURRENT_BINARY_DIR}/gen/default_cpp_flags.hpp)
+
+
+# generate version header
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gen/version.cmake.hpp ${CMAKE_CURRENT_BINARY_DIR}/gen/version.hpp)

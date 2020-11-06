@@ -186,9 +186,9 @@ getCompileFlags(const std::string &compileFlags) noexcept {
   std::vector<const char *> flags;
   StringList                flagList;
   { // at first set defaults flags
-    size_t numDefaultFlags = sizeof(defaultFlags) / sizeof(defaultFlags[0]);
+    size_t numDefaultFlags = sizeof(c_defaultFlags) / sizeof(c_defaultFlags[0]);
     for (size_t i = 0; i < numDefaultFlags; ++i) {
-      flags.emplace_back(defaultFlags[i]);
+      flags.emplace_back(c_defaultFlags[i]);
     }
     LOG_DEBUG("capacity of default flags: %1%", numDefaultFlags);
   }

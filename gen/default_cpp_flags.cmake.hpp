@@ -1,9 +1,9 @@
 // default_cpp_flags.hpp
-// XXX this file generate automaticly!
+// XXX this file generated automaticly. Do not edit!
 
 #pragma once
 
-const char *defaultFlags[] = {
+const char *c_defaultFlags[] = {
     // need for process every file separatly
     "-fPIC",
 

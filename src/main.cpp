@@ -1,5 +1,6 @@
 // main.cpp
 
+#include "gen/version.hpp"
 #include "hl/HandlerFactory.hpp"
 #include "logs.hpp"
 #include "ss/Context.hpp"
@@ -18,6 +19,7 @@
 #define LIMIT_SESSIONS "lim_conn"
 #define THREADS_COUNT  "threads"
 #define VERBOSE_FLAG   "verbose"
+#define VERSION_FLAG   "version"
 
 #define SHORT_VERBOSE_FLAG "v"
 #define SHORT_HELP_FLAG    "h"
@@ -26,6 +28,7 @@
 #define DEFAULT_PORT           53827
 #define DEFAULT_LIMIT_SESSIONS 0
 #define DEFAULT_THREADS_COUNT  1
+#define VERSION                c_version
 
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
@@ -58,15 +61,20 @@ int main(int argc, char *argv[]) {
       "that capacity of sessions not limited")(
       THREADS_COUNT,
       po::value<uint>()->required()->default_value(DEFAULT_THREADS_COUNT),
-      "capacity of server handling threads")(VERBOSE_FLAG
-                                             "," SHORT_VERBOSE_FLAG,
-                                             "print logs");
+      "capacity of server handling threads")(
+      VERBOSE_FLAG "," SHORT_VERBOSE_FLAG,
+      "print logs")(VERSION_FLAG, "return current version");
 
   po::variables_map argMap;
   po::store(po::parse_command_line(argc, argv, options), argMap);
 
   if (argMap.count(HELP_FLAG)) {
     std::cout << options << std::endl;
+    return EXIT_SUCCESS;
+  }
+
+  if (argMap.count(VERSION_FLAG)) {
+    std::cout << VERSION << std::endl;
     return EXIT_SUCCESS;
   }
 
@@ -106,6 +114,7 @@ int main(int argc, char *argv[]) {
     LOG_FAILURE("0 is impassible value for count of threads");
   }
 
+  LOG_INFO("version:  %1%", VERSION);
   LOG_INFO("host:     %1%", host);
   LOG_INFO("port:     %1%", port);
   LOG_INFO("threads:  %1%", threadsCount);
