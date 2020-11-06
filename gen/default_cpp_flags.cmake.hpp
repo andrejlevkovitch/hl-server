@@ -4,8 +4,10 @@
 #pragma once
 
 const char *defaultFlags[] = {
+    // need for process every file separatly
     "-fPIC",
-    "-isystem${LLVM_INSTALL_PREFIX}/include",
-    "-isystem${LLVM_INSTALL_PREFIX}/include/c++/v1",
-    "-isystem${LLVM_INSTALL_PREFIX}/lib/clang/${LLVM_PACKAGE_VERSION}/include",
-    "-resource-dir=${LLVM_INSTALL_PREFIX}/lib/clang/${LLVM_PACKAGE_VERSION}"};
+
+    // need for fix problem with finding stddef.h
+    // see output of command `clang -print-resource-dir`
+    "-resource-dir=${LLVM_LIBRARY_DIRS}/clang/${LLVM_PACKAGE_VERSION}",
+};

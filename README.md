@@ -45,3 +45,12 @@ Just change it to:
 ```
 -I/some/third/pary/library
 ```
+
+
+__NOTE__ if you want to use [libc++](https://libcxx.llvm.org/docs/UsingLibcxx.html)
+then you need also set incude directory:
+
+```
+-stdlib=libc++
+-isystem${LLVM_INSTALL_PREFIX}/include/c++/v1
+```
