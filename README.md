@@ -52,5 +52,5 @@ then you need also set incude directory:
 
 ```
 -stdlib=libc++
--isystem${LLVM_INSTALL_PREFIX}/include/c++/v1
+-I${LLVM_INSTALL_PREFIX}/include/c++/v1
 ```
