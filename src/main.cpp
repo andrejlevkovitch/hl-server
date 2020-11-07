@@ -116,22 +116,23 @@ int main(int argc, char *argv[]) {
 
   // run context for several threads
   ss::Context::init(threadsCount);
-  std::vector<std::thread> threads;
-  threads.reserve(threadsCount - 1);
 
   // set hander factory for requests
   ss::HandlerFactory handlerFactory = std::make_unique<hl::HandlerFactory>();
   ss::Context::setHandlerFactory(std::move(handlerFactory));
 
   ss::Server server{};
+  server.run(host, port);
 
+  // XXX initialization of threads must be after running server for prevent
+  // concurency
+  std::vector<std::thread> threads;
+  threads.reserve(threadsCount - 1);
   for (size_t threadNum = 0; threadNum < threadsCount - 1; ++threadNum) {
     threads.emplace_back([]() {
       ss::Context::ioContext().run();
     });
   }
-
-  server.run(host, port);
   ss::Context::ioContext().run();
 
   std::for_each(threads.begin(), threads.end(), [](std::thread &thread) {
