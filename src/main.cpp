@@ -13,13 +13,12 @@
 #include <thread>
 #include <vector>
 
-#define HELP_FLAG      "help"
-#define HOST_ARG       "host"
-#define PORT_ARG       "port"
-#define LIMIT_SESSIONS "lim_conn"
-#define THREADS_COUNT  "threads"
-#define VERBOSE_FLAG   "verbose"
-#define VERSION_FLAG   "version"
+#define HELP_FLAG     "help"
+#define HOST_ARG      "host"
+#define PORT_ARG      "port"
+#define THREADS_COUNT "threads"
+#define VERBOSE_FLAG  "verbose"
+#define VERSION_FLAG  "version"
 
 #define SHORT_VERBOSE_FLAG "v"
 #define SHORT_HELP_FLAG    "h"
@@ -55,10 +54,6 @@ int main(int argc, char *argv[]) {
       PORT_ARG,
       po::value<ushort>()->required()->default_value(DEFAULT_PORT),
       "port for server (note that port must be a 16bit value)")(
-      LIMIT_SESSIONS,
-      po::value<uint>()->required()->default_value(DEFAULT_LIMIT_SESSIONS),
-      "maximum capacity of opened connections, 0 is special value, which means "
-      "that capacity of sessions not limited")(
       THREADS_COUNT,
       po::value<uint>()->required()->default_value(DEFAULT_THREADS_COUNT),
       "capacity of server handling threads")(
@@ -105,10 +100,9 @@ int main(int argc, char *argv[]) {
   }
 
 
-  std::string host             = argMap[HOST_ARG].as<std::string>();
-  uint        port             = argMap[PORT_ARG].as<ushort>();
-  uint        maxSessionsCount = argMap[LIMIT_SESSIONS].as<uint>();
-  uint        threadsCount     = argMap[THREADS_COUNT].as<uint>();
+  std::string host         = argMap[HOST_ARG].as<std::string>();
+  uint        port         = argMap[PORT_ARG].as<ushort>();
+  uint        threadsCount = argMap[THREADS_COUNT].as<uint>();
 
   if (threadsCount == 0) {
     LOG_FAILURE("0 is impassible value for count of threads");
@@ -129,7 +123,7 @@ int main(int argc, char *argv[]) {
   ss::HandlerFactory handlerFactory = std::make_unique<hl::HandlerFactory>();
   ss::Context::setHandlerFactory(std::move(handlerFactory));
 
-  ss::Server server{maxSessionsCount};
+  ss::Server server{};
 
   for (size_t threadNum = 0; threadNum < threadsCount - 1; ++threadNum) {
     threads.emplace_back([]() {

@@ -10,7 +10,7 @@ class ServerImp;
 
 class Server {
 public:
-  explicit Server(unsigned int maxSessionCount) noexcept;
+  Server() noexcept;
   ~Server() noexcept;
 
   /**\brief start server for processing

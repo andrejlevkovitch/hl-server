@@ -20,11 +20,10 @@ class ServerImp
     : public std::enable_shared_from_this<ServerImp>
     , public asio::coroutine {
 public:
-  explicit ServerImp(uint maxSessionCount) noexcept
+  explicit ServerImp() noexcept
       : sigSet_{Context::ioContext(), SIGINT, SIGTERM}
       , acceptor_{Context::ioContext()}
-      , sessionPool_{}
-      , maxSessionCount_{maxSessionCount} {
+      , sessionPool_{} {
     // set callbacks for context
     sigSet_.async_wait([this](const error_code &error, int) {
       if (error.failed()) {
@@ -50,17 +49,6 @@ public:
       LOG_DEBUG("stop context");
       Context::ioContext().stop();
     });
-
-    // if we stop accepting after filling pool, then we must start accepting
-    // again after removing some session from pool
-    if (maxSessionCount_ != 0) {
-      sessionPool_.atSessionClose.connect([this] {
-        if (this->maxSessionCount_ > this->sessionPool_.size()) {
-          std::shared_ptr<ServerImp> self = this->shared_from_this();
-          this->startAccepting(std::move(self));
-        }
-      });
-    }
   }
 
   void run(std::shared_ptr<ServerImp> self,
@@ -170,20 +158,6 @@ private:
 
             session->start();
           }
-
-          // in this case stop accept any new sockets
-          if (maxSessionCount_ != 0 &&
-              maxSessionCount_ <= sessionPool_.size()) {
-            LOG_DEBUG("stop accepting, limit reached: %1%", maxSessionCount_);
-
-            stopAccepting();
-
-            // XXX after pool had filled we have to stop accepting. But, if some
-            // session will be removed from pool, we need start it again. So, DO
-            // NOT use here break! Because in case `break` we can not restart
-            // the coroutine
-            yield return;
-          }
         }
       }
     } else if (error == asio::error::operation_aborted) {
@@ -199,11 +173,10 @@ private:
   tcp::acceptor acceptor_;
 
   SessionPool sessionPool_;
-  size_t      maxSessionCount_;
 };
 
-Server::Server(uint maxSessionCount) noexcept
-    : imp_{std::make_shared<ServerImp>(maxSessionCount)} {
+Server::Server() noexcept
+    : imp_{std::make_shared<ServerImp>()} {
   LOG_DEBUG("Server constructor");
 }
 
