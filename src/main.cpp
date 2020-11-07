@@ -78,19 +78,19 @@ int main(int argc, char *argv[]) {
 
   // init logger
   auto cerrBackend   = std::make_shared<logs::TextStreamBackend>(std::cerr);
-  auto errorFrontend = std::make_shared<logs::StandardFrontend>();
+  auto errorFrontend = std::make_shared<logs::LightFrontend>();
   errorFrontend->setFilter(logs::Severity::Placeholder >=
                            logs::Severity::Error);
   LOGGER_ADD_SINK(errorFrontend, cerrBackend);
 
   if (argMap.count(VERBOSE_FLAG)) {
     auto coutBackend   = std::make_shared<logs::TextStreamBackend>(std::cout);
-    auto debugFrontend = std::make_shared<logs::StandardFrontend>();
+    auto debugFrontend = std::make_shared<logs::LightFrontend>();
     debugFrontend->setFilter(
         logs::Severity::Placeholder == logs::Severity::Info ||
         logs::Severity::Placeholder == logs::Severity::Debug); // all logs
 
-    auto warnFrontend = std::make_shared<logs::StandardFrontend>();
+    auto warnFrontend = std::make_shared<logs::LightFrontend>();
     warnFrontend->setFilter(
         logs::Severity::Placeholder == logs::Severity::Warning ||
         logs::Severity::Placeholder == logs::Severity::Throw);
