@@ -3,13 +3,13 @@
 #include "ss/Session.hpp"
 #include "logs.hpp"
 #include "ss/Context.hpp"
+#include "ss/errors.hpp"
 #include <boost/asio/coroutine.hpp>
 #include <boost/asio/read.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/yield.hpp>
 #include <iterator>
 #include <mutex>
-#include <ss/errors.hpp>
 
 #define REQUEST_BUFFER_RESERVED  1024 * 1000 // 1Mb
 #define RESPONSE_BUFFER_RESERVED 1024 * 1000
@@ -110,7 +110,8 @@ private:
 
             size_t     ignoreLength = 0;
             error_code err = requestHandler_->handle(req_, res_, ignoreLength);
-            if (err.failed() && error::isSessionErrorCategory(err.category()) &&
+            if (err.failed() &&
+                ss::error::isSessionErrorCategory(err.category()) &&
                 err.value() == error::SessionErrors::PartialData) {
               // so we need read more
               LOG_WARNING(err.message());

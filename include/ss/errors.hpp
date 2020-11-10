@@ -18,6 +18,10 @@ enum SessionErrors {
 
 class SessionErrorCategory final : public boost::system::error_category {
 public:
+  SessionErrorCategory()
+      : boost::system::error_category{0x5e3bf594e03e6721} {
+  }
+
   const char *name() const noexcept override {
     return "SessionErrorCategory";
   }
@@ -26,6 +30,8 @@ public:
     SessionErrors condition = static_cast<SessionErrors>(ev);
 
     switch (condition) {
+    case SessionErrors::Success:
+      return "success";
     case SessionErrors::PartialData:
       return "partial data in request buffer";
     default:
@@ -34,15 +40,15 @@ public:
   }
 };
 
-error_code make_error_code(SessionErrors ev);
+const SessionErrorCategory sessionErrorCategory;
 
-bool isSessionErrorCategory(const boost::system::error_category &category);
+constexpr error_code make_error_code(SessionErrors ev) noexcept {
+  return boost::system::error_code{static_cast<int>(ev), sessionErrorCategory};
+}
+
+inline bool
+isSessionErrorCategory(const boost::system::error_category &category) noexcept {
+  return sessionErrorCategory == category;
+}
 } // namespace error
 } // namespace ss
-
-namespace boost::system {
-template <>
-struct is_error_condition_enum<ss::error::SessionErrors> {
-  static const bool valud = true;
-};
-} // namespace boost::system

@@ -2,9 +2,8 @@
 
 #pragma once
 
-#include <boost/system/error_code.hpp>
+#include "ss/errors.hpp"
 #include <misc.hpp>
-#include <ss/errors.hpp>
 #include <string>
 #include <string_view>
 
@@ -32,8 +31,8 @@ public:
    * \note if ignoreLength bigger then current size of request buffer, then all
    * buffer will clean
    */
-  virtual error_code handle(const std::string &requestBuffer,
-                            OUTPUT std::string &responseBuffer,
-                            OUTPUT size_t &ignoreLength) noexcept = 0;
+  virtual ss::error_code handle(const std::string &requestBuffer,
+                                OUTPUT std::string &responseBuffer,
+                                OUTPUT size_t &ignoreLength) noexcept = 0;
 };
 } // namespace ss
