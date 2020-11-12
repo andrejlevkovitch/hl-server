@@ -23,7 +23,9 @@ using stream_protocol = asio::local::stream_protocol;
 
 
 template <typename Protocol>
-class Session final : public asio::coroutine {
+class Session final
+    : public asio::coroutine
+    , public std::enable_shared_from_this<Session<Protocol>> {
 public:
   using Socket = asio::basic_stream_socket<Protocol>;
 
@@ -36,8 +38,10 @@ public:
     resBuffer_.reserve(RES_BUFFER_RESERVED);
   }
 
-  void start(std::shared_ptr<Session> self) {
+  void start() {
     LOG_TRACE("start new session");
+
+    std::shared_ptr<Session> self = this->shared_from_this();
 
     error_code err = self->reqHandler_->atSessionStart();
     if (err.failed()) {
@@ -197,9 +201,7 @@ public:
   virtual ~ServerImpl() = default;
 
 
-  virtual void startAccepting(std::shared_ptr<ServerImpl> self) noexcept = 0;
-
-  virtual asio::io_context &ioContext() noexcept = 0;
+  virtual void startAccepting() noexcept = 0;
 
   virtual void stopAccepting() noexcept(false) = 0;
 
@@ -210,7 +212,8 @@ public:
 template <typename Protocol>
 class ServerImplStream
     : public ServerImpl
-    , public asio::coroutine {
+    , public asio::coroutine
+    , public std::enable_shared_from_this<ServerImplStream<Protocol>> {
 public:
   using Endpoint   = typename Protocol::endpoint;
   using SessionPtr = std::shared_ptr<Session<Protocol>>;
@@ -220,7 +223,8 @@ public:
   ServerImplStream(asio::io_context &    ioContext,
                    Endpoint              endpoint,
                    RequestHandlerFactory reqHandlerFactory)
-      : acceptor_{ioContext}
+      : ioContext_{ioContext}
+      , acceptor_{ioContext}
       , reqHandlerFactory_{std::move(reqHandlerFactory)} {
     LOG_TRACE("construct sever");
 
@@ -231,14 +235,12 @@ public:
     acceptor_.listen(Socket::max_listen_connections);
   }
 
-  asio::io_context &ioContext() noexcept override {
-    return acceptor_.get_io_context();
-  }
-
-  void startAccepting(std::shared_ptr<ServerImpl> self) noexcept override {
+  void startAccepting() noexcept override {
     LOG_TRACE("start accepting");
 
-    (*this)(self, error_code{}, Socket{self->ioContext()});
+    std::shared_ptr<ServerImpl> self = this->shared_from_this();
+
+    this->operator()(self, error_code{}, Socket{this->ioContext_});
   }
 
   void stopAccepting() noexcept(false) override {
@@ -302,7 +304,7 @@ private:
                                                   std::move(reqHandler));
 
 
-          session->start(session);
+          session->start();
           sessions_.emplace_back(std::move(session));
 
           LOG_DEBUG("sessions opened: %1%", sessions_.size());
@@ -315,6 +317,7 @@ private:
 
 
 private:
+  asio::io_context &    ioContext_;
   Acceptor              acceptor_;
   RequestHandlerFactory reqHandlerFactory_;
 
@@ -323,7 +326,7 @@ private:
 
 
 Server &Server::asyncRun() {
-  impl_->startAccepting(impl_);
+  impl_->startAccepting();
   return *this;
 }
 
