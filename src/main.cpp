@@ -23,11 +23,10 @@
 #define SHORT_VERBOSE_FLAG "v"
 #define SHORT_HELP_FLAG    "h"
 
-#define DEFAULT_HOST           "localhost"
-#define DEFAULT_PORT           53827
-#define DEFAULT_LIMIT_SESSIONS 0
-#define DEFAULT_THREADS_COUNT  1
-#define VERSION                c_version
+#define DEFAULT_HOST          "localhost"
+#define DEFAULT_PORT          53827
+#define DEFAULT_THREADS_COUNT 1
+#define VERSION               c_version
 
 #include <boost/stacktrace/stacktrace.hpp>
 #include <csignal>
