@@ -1,7 +1,8 @@
-// RequestHandler.hpp
+// TokenizeHandler.hpp
 
 #pragma once
 
+#include "misc.hpp"
 #include "ss/AbstractRequestHandler.hpp"
 
 namespace hl {
@@ -12,17 +13,18 @@ class ResponseSerializer;
  * \see hl::RequestObject
  * \see hl::ResponseObject
  */
-class RequestHandler final : public ss::AbstractRequestHander {
+class TokenizeHandler final : public ss::AbstractRequestHandler {
 public:
-  RequestHandler() noexcept;
-  ~RequestHandler() noexcept;
+  TokenizeHandler() noexcept;
+  ~TokenizeHandler() noexcept;
 
   /**\note in case of several requests in one buffer will handle only latest,
    * all requests before are considered as expired
    */
-  ss::error_code handle(const std::string &requestBuffer,
-                        OUTPUT std::string &responseBuffer,
-                        OUTPUT size_t &ignoreLength) noexcept override;
+  ss::error_code
+  handle(std::string_view requestBuffer,
+         OUTPUT TokenizeHandler::ResponseInserter responseInserter,
+         OUTPUT size_t &ignoreLength) noexcept override;
 
 private:
   RequestDeserializer *requestDeserializer_;

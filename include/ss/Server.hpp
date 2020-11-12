@@ -2,25 +2,53 @@
 
 #pragma once
 
+#include "ss/AbstractRequestHandler.hpp"
+#include <boost/asio/io_context.hpp>
 #include <memory>
-#include <string_view>
 
 namespace ss {
-class ServerImp;
+namespace asio = boost::asio;
+
+class ServerBuilder;
+class ServerImpl;
 
 class Server {
-public:
-  Server() noexcept;
-  ~Server() noexcept;
+  friend ServerBuilder;
 
-  /**\brief start server for processing
-   *
-   * \note it does not start io_context object! You must start it manually after
-   * run the server object
-   */
-  void run(std::string_view host, unsigned short port) noexcept;
+public:
+  enum Protocol { Tcp, Unix };
+
+  Server &asyncRun();
+
+  Server &stop();
 
 private:
-  std::shared_ptr<ServerImp> imp_;
+  Server() = default;
+
+private:
+  std::shared_ptr<ServerImpl> impl_;
+};
+
+using ServerPtr = std::shared_ptr<Server>;
+
+class ServerBuilder {
+public:
+  ServerBuilder(asio::io_context &context);
+
+  ServerBuilder &setRequestHandlerFactory(RequestHandlerFactory factory);
+
+  /**\param endpoint must contains protocol, ip and port
+   */
+  ServerBuilder &setEndpoint(Server::Protocol protocol,
+                             std::string_view endpoint);
+
+  ServerPtr build() const noexcept(false);
+
+private:
+  asio::io_context &ioContext_;
+
+  std::shared_ptr<AbstractRequestHandlerFactory> reqHandlerFactory_;
+  Server::Protocol                               protocol_;
+  std::string                                    endpoint_;
 };
 } // namespace ss

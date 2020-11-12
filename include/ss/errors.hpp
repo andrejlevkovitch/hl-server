@@ -10,7 +10,7 @@ namespace ss {
 using error_code = boost::system::error_code;
 
 namespace error {
-enum SessionErrors {
+enum SessionError {
   Success = 0,
   PartialData, // in buffer contains partial request
   Size,
@@ -27,12 +27,12 @@ public:
   }
 
   std::string message(int ev) const override {
-    SessionErrors condition = static_cast<SessionErrors>(ev);
+    SessionError condition = static_cast<SessionError>(ev);
 
     switch (condition) {
-    case SessionErrors::Success:
+    case SessionError::Success:
       return "success";
-    case SessionErrors::PartialData:
+    case SessionError::PartialData:
       return "partial data in request buffer";
     default:
       return "Unkhnown error condition: " + std::to_string(ev);
@@ -42,7 +42,7 @@ public:
 
 const SessionErrorCategory sessionErrorCategory;
 
-constexpr error_code make_error_code(SessionErrors ev) noexcept {
+constexpr error_code make_error_code(SessionError ev) noexcept {
   return boost::system::error_code{static_cast<int>(ev), sessionErrorCategory};
 }
 

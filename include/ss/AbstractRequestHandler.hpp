@@ -1,38 +1,46 @@
-// AbstractRequestHandler.cpp
+// AbstractRequestHandler.hpp
 
 #pragma once
 
 #include "ss/errors.hpp"
-#include <misc.hpp>
-#include <string>
-#include <string_view>
+#include <memory>
 
 namespace ss {
-class AbstractRequestHander {
+class AbstractRequestHandler {
 public:
-  virtual ~AbstractRequestHander() = default;
+  using ResponseInserter = std::back_insert_iterator<std::string>;
 
-  /**\return in case of success error code response will be send to client. If
-   * error_code is SessionErrors::PartialData, then will be executed another one
-   * read operation. Other error codes will close connection
-   *
-   * \warning if response is empty it handles as error: socket will be closed
-   *
-   * \note request buffer can contains several requests and/or partial data. In
-   * case of partial data you need return SesstionErrors::PartialData error for
-   * reading more.
-   *
-   * \param ignoreLength has a sence if method return PartialData error: if is 0
-   * (by default), then all information will be saved in request buffer,
-   * otherwise all information from begin to begin + ignoreLength will be ignore
-   * and in requestBuffer will be saved only information after begin +
-   * ignoreLength
-   *
-   * \note if ignoreLength bigger then current size of request buffer, then all
-   * buffer will clean
+  virtual ~AbstractRequestHandler() = default;
+
+  virtual ss::error_code atSessionStart() noexcept {
+    return boost::system::error_code();
+  };
+
+  virtual ss::error_code atSessionClose() noexcept {
+    return boost::system::error_code();
+  };
+
+  /**\brief handle request and produce responce
+   * \param reqIgnoreLength by default is 0. If 0, then request buffer will be
+   * completely cleared, otherwise will be cleared directly n-bytes in request
+   * buffer. If method return SessionError::PartialData and 0 as reqIgnoreLenght
+   * then data in buffer will not be clear
+   * \return error_code. If it is not success or not SessionError::PartialData,
+   * then session will be closed. If return SessionError::PartialData, then the
+   * buffer will be saved and session try read more data to the buffer
    */
-  virtual ss::error_code handle(const std::string &requestBuffer,
-                                OUTPUT std::string &responseBuffer,
-                                OUTPUT size_t &ignoreLength) noexcept = 0;
+  virtual ss::error_code handle(std::string_view requestBuffer,
+                                ResponseInserter respIter,
+                                size_t &         reqIgnoreLength) noexcept = 0;
 };
+
+using RequestHandler = std::shared_ptr<AbstractRequestHandler>;
+
+class AbstractRequestHandlerFactory {
+public:
+  virtual ~AbstractRequestHandlerFactory()             = default;
+  virtual RequestHandler makeRequestHandler() noexcept = 0;
+};
+
+using RequestHandlerFactory = std::shared_ptr<AbstractRequestHandlerFactory>;
 } // namespace ss

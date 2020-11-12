@@ -1,6 +1,6 @@
-// RequestHandler.cpp
+// TokenizeHandler.cpp
 
-#include "hl/RequestHandler.hpp"
+#include "hl/TokenizeHandler.hpp"
 #include "hl/RequestObject.hpp"
 #include "hl/ResponseObject.hpp"
 #include "logs.hpp"
@@ -11,31 +11,32 @@
 #define DATA_DELIMITER '\n'
 
 namespace hl {
-RequestHandler::RequestHandler() noexcept
+TokenizeHandler::TokenizeHandler() noexcept
     : requestDeserializer_{nullptr}
     , responseSerializer_{nullptr} {
   requestDeserializer_ = new RequestDeserializer{};
   responseSerializer_  = new ResponseSerializer{};
 }
 
-RequestHandler::~RequestHandler() noexcept {
+TokenizeHandler::~TokenizeHandler() noexcept {
   delete requestDeserializer_;
   delete responseSerializer_;
 }
 
-ss::error_code RequestHandler::handle(const std::string &requestBuffer,
-                                      OUTPUT std::string &responseBuffer,
-                                      OUTPUT size_t &ignoreLength) noexcept {
+ss::error_code TokenizeHandler::handle(
+    std::string_view requestBuffer,
+    OUTPUT TokenizeHandler::ResponseInserter responseInserter,
+    OUTPUT size_t &ignoreLength) noexcept {
   // XXX because request buffer can contains several requests we need tokenize
   // it and handle only latest. All request before are considered as expired
   static const std::regex    regByDelimiter{DATA_DELIMITER};
-  std::sregex_token_iterator requestIterator{requestBuffer.begin(),
+  std::cregex_token_iterator requestIterator{requestBuffer.begin(),
                                              requestBuffer.end(),
                                              regByDelimiter,
                                              -1};
 
   int ignoreRequestCounter = 0;
-  for (; std::next(requestIterator) != std::sregex_token_iterator{};
+  for (; std::next(requestIterator) != std::cregex_token_iterator{};
        ++requestIterator, ++ignoreRequestCounter) {
   }
 
@@ -49,14 +50,14 @@ ss::error_code RequestHandler::handle(const std::string &requestBuffer,
     LOG_WARNING("request buffer contains partial data");
 
     ignoreLength = std::distance(requestBuffer.begin(), requestIterator->first);
-    return ss::error::make_error_code(ss::error::SessionErrors::PartialData);
+    return ss::error::make_error_code(ss::error::SessionError::PartialData);
   }
 
   // and handle latest request
   const std::string &request = requestIterator->str();
 
   error_code returnCode =
-      ss::error::make_error_code(ss::error::SessionErrors::Success);
+      ss::error::make_error_code(ss::error::SessionError::Success);
 
   RequestObject        requestObject;
   ResponseObject       responseObject;
@@ -121,7 +122,7 @@ ss::error_code RequestHandler::handle(const std::string &requestBuffer,
 
 Finally:
   if (error_code error =
-          responseSerializer_->serialize(responseObject, responseBuffer);
+          responseSerializer_->serialize(responseObject, responseInserter);
       error.failed()) {
     // in this case we has serialization logic error, so I don't see any reason
     // for handling it, because client will don't get result. So if you get this
@@ -130,7 +131,7 @@ Finally:
   }
 
   // responses must be separated by delimiter as requests
-  responseBuffer += DATA_DELIMITER;
+  responseInserter = DATA_DELIMITER;
 
   return returnCode;
 }

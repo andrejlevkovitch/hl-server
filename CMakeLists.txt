@@ -20,13 +20,10 @@ find_library(Clang_LIBRARY NAMES clang HINTS ${LLVM_LIBRARY_DIRS})
 set(PROJECT_SRC
   src/main.cpp
 
-  src/ss/Context.cpp
   src/ss/Server.cpp
-  src/ss/Session.cpp
-  src/ss/SessionPool.cpp
 
-  src/hl/RequestHandler.cpp
-  src/hl/HandlerFactory.cpp
+  src/hl/TokenizeHandler.cpp
+  src/hl/TokenizeHandlerFactory.cpp
   src/hl/RequestObject.cpp
   src/hl/ResponseObject.cpp
 
