@@ -20,7 +20,7 @@ find_library(Clang_LIBRARY NAMES clang HINTS ${LLVM_LIBRARY_DIRS})
 set(PROJECT_SRC
   src/main.cpp
 
-  src/ss/Server.cpp
+  third-party/SimpleServer/src/ss/Server.cpp
 
   src/hl/TokenizeHandler.cpp
   src/hl/TokenizeHandlerFactory.cpp
@@ -49,6 +49,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   include
   ${LLVM_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
+  third-party/SimpleServer/include
   )
 
 

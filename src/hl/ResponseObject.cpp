@@ -1,9 +1,9 @@
 // ResponseObject.cpp
 
 #include "hl/ResponseObject.hpp"
-#include "logs.hpp"
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
+#include <simple_logs/logs.hpp>
 
 namespace hl {
 using Json = nlohmann::json;

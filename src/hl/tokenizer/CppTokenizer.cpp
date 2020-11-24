@@ -2,7 +2,6 @@
 
 #include "CppTokenizer.hpp"
 #include "gen/default_cpp_flags.hpp"
-#include "logs.hpp"
 #include <algorithm>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid.hpp>
@@ -13,6 +12,7 @@
 #include <iterator>
 #include <list>
 #include <regex>
+#include <simple_logs/logs.hpp>
 #include <sstream>
 #include <vector>
 

@@ -3,10 +3,10 @@
 #include "hl/TokenizeHandler.hpp"
 #include "hl/RequestObject.hpp"
 #include "hl/ResponseObject.hpp"
-#include "logs.hpp"
 #include "tokenizer/TokenizerFactory.hpp"
 #include <exception>
 #include <regex>
+#include <simple_logs/logs.hpp>
 
 #define DATA_DELIMITER '\n'
 

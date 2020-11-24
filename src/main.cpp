@@ -2,7 +2,6 @@
 
 #include "gen/version.hpp"
 #include "hl/TokenizeHandlerFactory.hpp"
-#include "logs.hpp"
 #include "ss/Server.hpp"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
@@ -11,6 +10,7 @@
 #include <boost/program_options/value_semantic.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <cstdlib>
+#include <simple_logs/logs.hpp>
 #include <thread>
 #include <vector>
 
