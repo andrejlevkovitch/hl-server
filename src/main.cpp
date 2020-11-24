@@ -15,7 +15,7 @@
 #include <vector>
 
 #define HELP_FLAG     "help"
-#define ENDPOINT_FLAG "endpoint"
+#define PORT_FLAG     "port"
 #define PROTOCOL_FLAG "protocol"
 #define THREADS_COUNT "threads"
 #define VERBOSE_FLAG  "verbose"
@@ -27,7 +27,7 @@
 #define TCP_PROTOCOL  "tcp"
 #define UNIX_PROTOCOL "unix"
 
-#define DEFAULT_ENDPOINT      "127.0.0.1:53827"
+#define DEFAULT_PORT          53827
 #define DEFAULT_PROTOCOL      TCP_PROTOCOL
 #define DEFAULT_THREADS_COUNT 1
 #define VERSION               c_version
@@ -51,13 +51,14 @@ int main(int argc, char *argv[]) {
   namespace po = boost::program_options;
 
   // parse args
-  po::options_description options;
+  po::options_description options{
+      "server works only as local server, it can be used by other hosts"};
 
   // add options for server
   options.add_options()(HELP_FLAG "," SHORT_HELP_FLAG, "produce help message")(
-      ENDPOINT_FLAG,
-      po::value<std::string>()->required()->default_value(DEFAULT_ENDPOINT),
-      "endpoint for server")(
+      PORT_FLAG,
+      po::value<uint16_t>()->required()->default_value(DEFAULT_PORT),
+      "port for server")(
       PROTOCOL_FLAG,
       po::value<std::string>()->required()->default_value(DEFAULT_PROTOCOL),
       "supported protocols: tcp, unix")(
@@ -110,7 +111,10 @@ int main(int argc, char *argv[]) {
 
   uint        threadsCount = argMap[THREADS_COUNT].as<uint>();
   std::string protocol     = argMap[PROTOCOL_FLAG].as<std::string>();
-  std::string endpoint     = argMap[ENDPOINT_FLAG].as<std::string>();
+  uint16_t    port         = argMap[PORT_FLAG].as<uint16_t>();
+
+  // XXX use ONLY localhost
+  std::string endpoint = "127.0.0.1:" + std::to_string(port);
 
   if (threadsCount == 0) {
     LOG_FAILURE("0 is impassible value for count of threads");
