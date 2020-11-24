@@ -20,13 +20,10 @@ find_library(Clang_LIBRARY NAMES clang HINTS ${LLVM_LIBRARY_DIRS})
 set(PROJECT_SRC
   src/main.cpp
 
-  src/ss/Context.cpp
-  src/ss/Server.cpp
-  src/ss/Session.cpp
-  src/ss/SessionPool.cpp
+  third-party/SimpleServer/src/ss/Server.cpp
 
-  src/hl/RequestHandler.cpp
-  src/hl/HandlerFactory.cpp
+  src/hl/TokenizeHandler.cpp
+  src/hl/TokenizeHandlerFactory.cpp
   src/hl/RequestObject.cpp
   src/hl/ResponseObject.cpp
 
@@ -52,6 +49,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   include
   ${LLVM_INCLUDE_DIRS}
   ${CMAKE_CURRENT_BINARY_DIR}
+  third-party/SimpleServer/include
   )
 
 

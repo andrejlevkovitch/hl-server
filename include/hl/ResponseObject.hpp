@@ -64,8 +64,9 @@ public:
    * \note if resp is not empty string, then new data will be added in the end
    * of string
    */
-  error_code serialize(const ResponseObject &respObj,
-                       OUTPUT std::string &resp) noexcept;
+  error_code serialize(
+      const ResponseObject &respObj,
+      OUTPUT std::back_insert_iterator<std::string> respInserter) noexcept;
 
 private:
   /**\note uses only for debug

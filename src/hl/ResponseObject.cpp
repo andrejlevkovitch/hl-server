@@ -1,9 +1,9 @@
 // ResponseObject.cpp
 
 #include "hl/ResponseObject.hpp"
-#include "logs.hpp"
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
+#include <simple_logs/logs.hpp>
 
 namespace hl {
 using Json = nlohmann::json;
@@ -23,8 +23,9 @@ ResponseSerializer::~ResponseSerializer() noexcept {
   delete responseValidator_11_;
 }
 
-error_code ResponseSerializer::serialize(const ResponseObject &respObj,
-                                         OUTPUT std::string &resp) noexcept {
+error_code ResponseSerializer::serialize(
+    const ResponseObject &respObj,
+    OUTPUT std::back_insert_iterator<std::string> respInserter) noexcept {
   Json output = Json::array();
   output.emplace_back(respObj.msg_num);
 
@@ -80,7 +81,7 @@ error_code ResponseSerializer::serialize(const ResponseObject &respObj,
 #endif
 
   std::string serialized = output.dump();
-  std::copy(serialized.begin(), serialized.end(), std::back_inserter(resp));
+  std::copy(serialized.begin(), serialized.end(), respInserter);
 
   return error_code{};
 }
