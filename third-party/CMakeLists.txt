@@ -14,4 +14,4 @@ option(BUILD_TESTS    OFF)
 option(BUILD_EXAMPLES OFF)
 add_subdirectory(json-schema-validator)
 
-add_subdirectory(SimpleServer)
+add_subdirectory(simple_logs)

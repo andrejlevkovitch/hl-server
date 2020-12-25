@@ -50,14 +50,15 @@ ss::error_code TokenizeHandler::handle(
     LOG_WARNING("request buffer contains partial data");
 
     ignoreLength = std::distance(requestBuffer.begin(), requestIterator->first);
-    return ss::error::make_error_code(ss::error::SessionError::PartialData);
+    return boost::system::errc::make_error_code(
+        boost::system::errc::broken_pipe);
   }
 
   // and handle latest request
   const std::string &request = requestIterator->str();
 
   error_code returnCode =
-      ss::error::make_error_code(ss::error::SessionError::Success);
+      boost::system::errc::make_error_code(boost::system::errc::success);
 
   RequestObject        requestObject;
   ResponseObject       responseObject;

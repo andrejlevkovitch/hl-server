@@ -3,7 +3,12 @@
 #pragma once
 
 #include "misc.hpp"
-#include "ss/AbstractRequestHandler.hpp"
+#include <boost/system/error_code.hpp>
+
+namespace ss {
+using error_code = boost::system::error_code;
+}
+
 
 namespace hl {
 class RequestDeserializer;
@@ -13,8 +18,10 @@ class ResponseSerializer;
  * \see hl::RequestObject
  * \see hl::ResponseObject
  */
-class TokenizeHandler final : public ss::AbstractRequestHandler {
+class TokenizeHandler final {
 public:
+  using ResponseInserter = std::back_insert_iterator<std::string>;
+
   TokenizeHandler() noexcept;
   ~TokenizeHandler() noexcept;
 
@@ -24,7 +31,7 @@ public:
   ss::error_code
   handle(std::string_view requestBuffer,
          OUTPUT TokenizeHandler::ResponseInserter responseInserter,
-         OUTPUT size_t &ignoreLength) noexcept override;
+         OUTPUT size_t &ignoreLength) noexcept;
 
 private:
   RequestDeserializer *requestDeserializer_;

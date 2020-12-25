@@ -2,11 +2,16 @@
 
 #pragma once
 
-#include "ss/AbstractRequestHandler.hpp"
+#include "TokenizeHandler.hpp"
+
+namespace ss {
+using RequestHandler = std::unique_ptr<hl::TokenizeHandler>;
+}
 
 namespace hl {
-class TokenizeHandlerFactory final : public ss::AbstractRequestHandlerFactory {
+
+class TokenizeHandlerFactory final {
 public:
-  ss::RequestHandler makeRequestHandler() noexcept override;
+  ss::RequestHandler makeRequestHandler() noexcept;
 };
 } // namespace hl
