@@ -21,7 +21,6 @@ set(PROJECT_SRC
   src/main.cpp
 
   src/hl/TokenizeHandler.cpp
-  src/hl/TokenizeHandlerFactory.cpp
   src/hl/RequestObject.cpp
   src/hl/ResponseObject.cpp
 

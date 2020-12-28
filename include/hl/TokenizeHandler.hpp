@@ -30,4 +30,10 @@ private:
   RequestDeserializer *requestDeserializer_;
   ResponseSerializer * responseSerializer_;
 };
+
+
+class TokenizeHandlerFactory final : public ss::AbstractRequestHandlerFactory {
+public:
+  ss::RequestHandler makeRequestHandler() noexcept override;
+};
 } // namespace hl

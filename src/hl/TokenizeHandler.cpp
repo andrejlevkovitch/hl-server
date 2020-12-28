@@ -101,7 +101,8 @@ ss::error_code TokenizeHandler::handle(
     TokenList tokens = tokenizer->tokenize(requestObject.buf_type,
                                            requestObject.buf_body,
                                            requestObject.additional_info);
-    responseObject   = ResponseObject{requestObject.msg_num,
+
+    responseObject = ResponseObject{requestObject.msg_num,
                                     requestObject.version,
                                     requestObject.id,
                                     requestObject.buf_type,
@@ -134,5 +135,10 @@ Finally:
   responseInserter = DATA_DELIMITER;
 
   return returnCode;
+}
+
+
+ss::RequestHandler TokenizeHandlerFactory::makeRequestHandler() noexcept {
+  return std::make_unique<TokenizeHandler>();
 }
 } // namespace hl

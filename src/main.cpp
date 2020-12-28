@@ -1,7 +1,7 @@
 // main.cpp
 
 #include "gen/version.hpp"
-#include "hl/TokenizeHandlerFactory.hpp"
+#include "hl/TokenizeHandler.hpp"
 #include "ss/Server.hpp"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/signal_set.hpp>
