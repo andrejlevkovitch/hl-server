@@ -6,21 +6,16 @@
 #include <simple_logs/logs.hpp>
 
 namespace hl {
-using Json = nlohmann::json;
+using Json       = nlohmann::json;
+namespace system = boost::system;
 
 ResponseSerializer::ResponseSerializer() noexcept
-    : responseValidator_1_{nullptr}
-    , responseValidator_11_{nullptr} {
-  responseValidator_1_ = new Validator{};
-  responseValidator_1_->set_root_schema(Json::parse(responseSchema_v1));
-
-  responseValidator_11_ = new Validator{};
-  responseValidator_11_->set_root_schema(Json::parse(responseSchema_v11));
+    : validator_{new Validator{}} {
+  validator_->set_root_schema(Json::parse(responseSchema));
 }
 
 ResponseSerializer::~ResponseSerializer() noexcept {
-  delete responseValidator_1_;
-  delete responseValidator_11_;
+  delete validator_;
 }
 
 error_code ResponseSerializer::serialize(
@@ -39,7 +34,7 @@ error_code ResponseSerializer::serialize(
 
   switch (getVersionEnum(respObj.version)) {
   case Version::V1:
-    data[ID_TAG] = std::atoi(respObj.id.c_str());
+    data[ID_TAG] = std::stoi(respObj.id);
     break;
   case Version::V11:
     data[ID_TAG] = respObj.id;
@@ -51,32 +46,18 @@ error_code ResponseSerializer::serialize(
     LOG_FAILURE("not impemented version: %1%", respObj.version);
   }
 
-  Json &serializedTokens = data[TOKENS_TAG] = Json::object();
+  Json serializedTokens = Json::object();
   for (const auto &[group, pos] : respObj.tokens) {
     serializedTokens[group].emplace_back(pos);
   }
+  data[TOKENS_TAG] = std::move(serializedTokens);
 
 #ifndef NDEBUG
   try {
-    switch (getVersionEnum(respObj.version)) {
-    case Version::V1:
-      responseValidator_1_->validate(output);
-      break;
-    case Version::V11:
-      responseValidator_11_->validate(output);
-      break;
-    default:
-      // XXX if you fail here then you has this version in validator schema,
-      // but, for some reason, you don't implement logic for parsing. So, you
-      // must fix that
-      LOG_THROW(std::invalid_argument,
-                "invalid protocol version: %1%",
-                respObj.version);
-    }
+    validator_->validate(output);
   } catch (std::exception &e) {
     LOG_ERROR(e.what());
-    return error_code{boost::system::errc::bad_message,
-                      boost::system::system_category()};
+    return system::errc::make_error_code(system::errc::bad_message);
   }
 #endif
 

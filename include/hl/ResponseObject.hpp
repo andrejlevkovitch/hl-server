@@ -71,7 +71,6 @@ public:
 private:
   /**\note uses only for debug
    */
-  Validator *responseValidator_1_;
-  Validator *responseValidator_11_;
+  Validator *validator_;
 };
 } // namespace hl

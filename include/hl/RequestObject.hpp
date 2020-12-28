@@ -57,8 +57,6 @@ public:
                          OUTPUT RequestObject &reqObj) noexcept;
 
 private:
-  Validator *baseRequestValidator_;
-  Validator *requestValidator_1_;
-  Validator *requestValidator_11_;
+  Validator *validator_;
 };
 } // namespace hl

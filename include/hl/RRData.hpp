@@ -41,46 +41,17 @@ inline Version getVersionEnum(std::string_view versionString) {
   return Version::None;
 }
 
-const std::string baseReqSchema = R"(
+const std::string requestSchema = R"(
 {
-  "type": "array",
-  "items": [
-    { "$ref": "#/definitions/message_number" },
-    {"$ref": "#/definitions/request_body"}
-  ],
-  "minItems": 2,
-  "maxItems": 2,
-  "definitions": {
-    "message_number": {
-      "type": "integer"
-    },
-    "request_body": {
-      "type": "object",
-      "required": [
-          "version"
-      ],
-      "properties": {
-        "version": {
-          "type": "string",
-          "enum": ["v1", "v1.1"]
-        }
-      }
-    }
-  }
-}
-)";
-
-const std::string requestSchema_v1 = R"(
-{
-    "$schema": "http://json-schema/schema#",
-    "title": "request schema v1",
+    "$schema": "http://json-schema/draft-07/schema#",
+    "title": "request schema",
     "description": "schema for validate requests for hl-server",
-
     "type": "array",
-    "items": [
-      { "$ref": "#/definitions/message_number" },
-      { "$ref": "#/definitions/request_body" }
-    ],
+    "items": [{
+        "$ref": "#/definitions/message_number"
+    }, {
+        "$ref": "#/definitions/request_body"
+    }],
     "minItems": 2,
     "maxItems": 2,
     "definitions": {
@@ -90,109 +61,103 @@ const std::string requestSchema_v1 = R"(
         "request_body": {
             "type": "object",
             "required": [
-                "version", "id", "buf_type", "buf_name", "buf_body", "additional_info"
+                "version", "id", "buf_type", "buf_name", "buf_body",
+                "additional_info"
             ],
-
-            "properties": {
-                "version": {
-                    "comment": "version of protocol",
-                    "type": "string",
-                    "const": "v1"
+            "oneOf": [{
+                "properties": {
+                    "version": {
+                        "$ref": "#/definitions/version_1"
+                    },
+                    "id": {
+                        "$ref": "#/definitions/id_v1"
+                    },
+                    "buf_type": {
+                        "$ref": "#/definitions/buf_type"
+                    },
+                    "buf_name": {
+                        "$ref": "#/definitions/buf_name"
+                    },
+                    "buf_body": {
+                        "$ref": "#/definitions/buf_body"
+                    },
+                    "additional_info": {
+                        "$ref": "#/definitions/additional_info"
+                    }
                 },
-                "id": {
-                    "comment": "client id",
-                    "type": "integer"
+                "additionalProperties": false
+            }, {
+                "properties": {
+                    "version": {
+                        "$ref": "#/definitions/version_1.1"
+                    },
+                    "id": {
+                        "$ref": "#/definitions/id_v1.1"
+                    },
+                    "buf_type": {
+                        "$ref": "#/definitions/buf_type"
+                    },
+                    "buf_name": {
+                        "$ref": "#/definitions/buf_name"
+                    },
+                    "buf_body": {
+                        "$ref": "#/definitions/buf_body"
+                    },
+                    "additional_info": {
+                        "$ref": "#/definitions/additional_info"
+                    }
                 },
-                "buf_type": {
-                    "comment": "type of buffer entity",
-                    "type": "string"
-                },
-                "buf_name": {
-                    "comment": "name of buffer",
-                    "type": "string"
-                },
-                "buf_body": {
-                    "comment": "complete buffer entity",
-                    "type": "string"
-                },
-                "additional_info": {
-                    "comment": "some handler specific information",
-                    "type": "string"
-                }
-            },
-            "additionalProperties": false
-        }
-    }
-}
-)";
-
-const std::string requestSchema_v11 = R"(
-{
-    "$schema": "http://json-schema/schema#",
-    "title": "request schema v1.1",
-    "description": "schema for validate requests for hl-server",
-
-    "type": "array",
-    "items": [
-      { "$ref": "#/definitions/message_number" },
-      { "$ref": "#/definitions/request_body" }
-    ],
-    "minItems": 2,
-    "maxItems": 2,
-    "definitions": {
-        "message_number": {
+                "additionalProperties": false
+            }]
+        },
+        "version_1": {
+            "type": "string",
+            "const": "v1"
+        },
+        "version_1.1": {
+            "type": "string",
+            "const": "v1.1"
+        },
+        "id_v1": {
+            "comment": "client id",
             "type": "integer"
         },
-        "request_body": {
-            "type": "object",
-            "required": [
-                "version", "id", "buf_type", "buf_name", "buf_body", "additional_info"
-            ],
-
-            "properties": {
-                "version": {
-                    "comment": "version of protocol",
-                    "type": "string",
-                    "const": "v1.1"
-                },
-                "id": {
-                    "comment": "client id",
-                    "type": "string"
-                },
-                "buf_type": {
-                    "comment": "type of buffer entity",
-                    "type": "string"
-                },
-                "buf_name": {
-                    "comment": "name of buffer",
-                    "type": "string"
-                },
-                "buf_body": {
-                    "comment": "complete buffer entity",
-                    "type": "string"
-                },
-                "additional_info": {
-                    "comment": "some handler specific information",
-                    "type": "string"
-                }
-            },
-            "additionalProperties": false
+        "id_v1.1": {
+            "comment": "client id",
+            "type": "string"
+        },
+        "buf_type": {
+            "comment": "type of buffer entity",
+            "type": "string"
+        },
+        "buf_name": {
+            "comment": "name of buffer",
+            "type": "string"
+        },
+        "buf_body": {
+            "comment": "complete buffer entity",
+            "type": "string"
+        },
+        "additional_info": {
+            "comment": "some handler specific information",
+            "type": "string"
         }
     }
 }
 )";
 
-const std::string responseSchema_v1 = R"(
+
+const std::string responseSchema = R"(
 {
-    "$schema": "http://json-schema/schema#",
-    "title": "response schema v1",
+    "$schema": "http://json-schema/draft-07/schema#",
+    "title": "response schema",
     "description": "schema for validate response of hl-server",
-
     "type": "array",
-    "items": [
-      { "$ref": "#/definitions/message_number" },
-      { "$ref": "#/definitions/response_body" }
-    ],
+    "items": [{
+        "$ref": "#/definitions/message_number"
+    }, {
+        "$ref": "#/definitions/response_body"
+    }],
     "definitions": {
         "message_number": {
             "type": "integer"
@@ -200,132 +165,101 @@ const std::string responseSchema_v1 = R"(
         "response_body": {
             "type": "object",
             "required": [
-                "version", "id", "buf_type", "buf_name", "return_code", "error_message", "tokens"
+                "version", "id", "buf_type", "buf_name", "return_code",
+                "error_message", "tokens"
             ],
-
-            "properties": {
-                "version": {
-                    "comment": "version of protocol",
-                    "type": "string",
-                    "const": "v1"
+            "oneOf": [{
+                "properties": {
+                    "version": {
+                        "$ref": "#/definitions/version_1"
+                    },
+                    "id": {
+                        "$ref": "#/definitions/id_v1"
+                    },
+                    "buf_type": {
+                        "$ref": "#/definitions/buf_type"
+                    },
+                    "buf_name": {
+                        "$ref": "#/definitions/buf_name"
+                    },
+                    "return_code": {
+                        "$ref": "#/definitions/return_code"
+                    },
+                    "error_message": {
+                        "$ref": "#/definitions/error_message"
+                    },
+                    "tokens": {
+                        "$ref": "#/definitions/tokens"
+                    }
                 },
-                "id": {
-                    "comment": "client id",
-                    "type": "integer"
+                "additionalProperties": false
+            }, {
+                "properties": {
+                    "version": {
+                        "$ref": "#/definitions/version_1.1"
+                    },
+                    "id": {
+                        "$ref": "#/definitions/id_v1.1"
+                    },
+                    "buf_type": {
+                        "$ref": "#/definitions/buf_type"
+                    },
+                    "buf_name": {
+                        "$ref": "#/definitions/buf_name"
+                    },
+                    "return_code": {
+                        "$ref": "#/definitions/return_code"
+                    },
+                    "error_message": {
+                        "$ref": "#/definitions/error_message"
+                    },
+                    "tokens": {
+                        "$ref": "#/definitions/tokens"
+                    }
                 },
-                "buf_type": {
-                    "comment": "type of buffer entity",
-                    "type": "string"
-                },
-                "buf_name": {
-                    "comment": "name of buffer",
-                    "type": "string"
-                },
-                "return_code": {
-                    "comment": "0 in case of success, otherwise some not null integer value",
-                    "type": "integer"
-                },
-                "error_message": {
-                    "comment": "contains inforamtion about error (if some error caused) ",
-                    "type": "string"
-                },
-                "tokens": {
-                    "comment": "contains dictionary of tokens by token groups",
-                    "$ref": "#/definitions/tokens"
-                }
-            },
-            "additionalProperties": false
+                "additionalProperties": false
+            }]
+        },
+        "version_1": {
+            "comment": "version of protocol",
+            "type": "string",
+            "const": "v1"
+        },
+        "version_1.1": {
+            "comment": "version of protocol",
+            "type": "string",
+            "const": "v1.1"
+        },
+        "id_v1": {
+            "comment": "client id",
+            "type": "integer"
+        },
+        "id_v1.1": {
+            "comment": "client id",
+            "type": "string"
+        },
+        "buf_type": {
+            "comment": "type of buffer entity",
+            "type": "string"
+        },
+        "buf_name": {
+            "comment": "name of buffer",
+            "type": "string"
+        },
+        "return_code": {
+            "comment": "0 in case of success, otherwise some not null integer value",
+            "type": "integer"
+        },
+        "error_message": {
+            "comment": "contains inforamtion about error (if some error caused) ",
+            "type": "string"
         },
         "tokens": {
+            "comment": "contains dictionary of tokens by token groups",
             "type": "object",
-            "patternProperties": {
-                "^.+$": {
-                    "$ref": "#/definitions/array_of_token_koordinates"
-                }
-            },
-            "additionalProperties": false
-        },
-        "array_of_token_koordinates": {
-            "type": "array",
-            "items": {
-                "$ref": "#/definitions/token_koordinate"
+            "additionalProperties": {
+                "$ref": "#/definitions/array_of_token_koordinates"
             }
-        },
-        "token_koordinate": {
-            "comment": "contains array of integers with: row, column, token_size",
-            "type": "array",
-            "items": {
-                "type": "integer"
-            },
-            "minItems": 3,
-            "maxItems": 3
-        }
-    }
-}
-)";
-
-const std::string responseSchema_v11 = R"(
-{
-    "$schema": "http://json-schema/schema#",
-    "title": "response schema v1.1",
-    "description": "schema for validate response of hl-server",
-
-    "type": "array",
-    "items": [
-      { "$ref": "#/definitions/message_number" },
-      { "$ref": "#/definitions/response_body" }
-    ],
-    "definitions": {
-        "message_number": {
-            "type": "integer"
-        },
-        "response_body": {
-            "type": "object",
-            "required": [
-                "version", "id", "buf_type", "buf_name", "return_code", "error_message", "tokens"
-            ],
-
-            "properties": {
-                "version": {
-                    "comment": "version of protocol",
-                    "type": "string",
-                    "enum": "v1.1"
-                },
-                "id": {
-                    "comment": "client id",
-                    "type": "string"
-                },
-                "buf_type": {
-                    "comment": "type of buffer entity",
-                    "type": "string"
-                },
-                "buf_name": {
-                    "comment": "name of buffer",
-                    "type": "string"
-                },
-                "return_code": {
-                    "comment": "0 in case of success, otherwise some not null integer value",
-                    "type": "integer"
-                },
-                "error_message": {
-                    "comment": "contains inforamtion about error (if some error caused) ",
-                    "type": "string"
-                },
-                "tokens": {
-                    "comment": "contains dictionary of tokens by token groups",
-                    "$ref": "#/definitions/tokens"
-                }
-            },
-            "additionalProperties": false
-        },
-        "tokens": {
-            "type": "object",
-            "patternProperties": {
-                "^.+$": {
-                    "$ref": "#/definitions/array_of_token_koordinates"
-                }
-            },
-            "additionalProperties": false
         },
         "array_of_token_koordinates": {
             "type": "array",
