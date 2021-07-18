@@ -144,7 +144,13 @@ int main(int argc, char *argv[]) {
   serverBuilder.setEndpoint(proto, endpoint)
       .setRequestHandlerFactory(handlerFactory);
 
-  std::shared_ptr<ss::Server> server = serverBuilder.build();
+  std::shared_ptr<ss::Server> server;
+  try {
+    server = serverBuilder.build();
+  } catch (std::exception &e) {
+    LOG_ERROR("exception during server initialization: %s", e.what());
+    return EXIT_FAILURE;
+  }
 
   server->asyncRun();
 
