@@ -11,7 +11,7 @@ include(cmake/doxygen.cmake)
 
 add_subdirectory(third-party)
 
-find_package(Boost COMPONENTS program_options stacktrace_backtrace REQUIRED)
+find_package(Boost COMPONENTS program_options REQUIRED)
 find_package(Threads REQUIRED)
 find_package(LLVM REQUIRED)
 
@@ -31,7 +31,6 @@ set(PROJECT_SRC
 
 add_executable(${PROJECT_NAME} ${PROJECT_SRC})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
-target_compile_options(${PROJECT_NAME} PRIVATE -g) # needed for working backtrace
 target_link_libraries(${PROJECT_NAME} PRIVATE
   Boost::boost
   Threads::Threads

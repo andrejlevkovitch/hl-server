@@ -39,15 +39,7 @@ namespace asio   = boost::asio;
 using error_code = boost::system::error_code;
 
 
-void sigsegv_handler([[maybe_unused]] int signal) {
-  // XXX note that backtrace printing right only if program compiled with -g
-  boost::stacktrace::stacktrace trace{};
-  LOG_FAILURE(boost::stacktrace::to_string(trace));
-}
-
 int main(int argc, char *argv[]) {
-  std::signal(SIGSEGV, sigsegv_handler);
-
   namespace po = boost::program_options;
 
   // parse args
