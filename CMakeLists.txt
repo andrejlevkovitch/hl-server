@@ -10,7 +10,6 @@ include(cmake/build.cmake)
 
 add_subdirectory(third-party)
 
-find_package(Threads REQUIRED)
 find_package(LLVM REQUIRED)
 
 find_library(Clang_LIBRARY NAMES clang HINTS ${LLVM_LIBRARY_DIRS})
@@ -23,7 +22,6 @@ set(PROJECT_SRC
 add_executable(${PROJECT_NAME} ${PROJECT_SRC})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
 target_link_libraries(${PROJECT_NAME} PRIVATE
-  Threads::Threads
   nlohmann_json::nlohmann_json
   nlohmann_json_schema_validator
   ${Clang_LIBRARY}
@@ -39,7 +37,6 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # generate default flags for clang tokenizer
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gen/default_cpp_flags.cmake.h ${CMAKE_CURRENT_BINARY_DIR}/gen/default_cpp_flags.h)
-
 
 # generate version header
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gen/version.cmake.h ${CMAKE_CURRENT_BINARY_DIR}/gen/version.h)
