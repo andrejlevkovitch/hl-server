@@ -4,6 +4,3 @@
 [submodule "third-party/json-schema-validator"]
 	path = third-party/json-schema-validator
 	url = https://github.com/pboettch/json-schema-validator.git
-[submodule "third-party/SimpleServer"]
-	path = third-party/SimpleServer
-	url = https://github.com/andrejlevkovitch/SimpleServer.git

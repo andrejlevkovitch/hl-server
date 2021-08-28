@@ -4,7 +4,7 @@
 #pragma once
 
 const char *c_defaultFlags[] = {
-    // need for process every file separatly
+    // need for process every file separately
     "-fPIC",
 
     // need for fix problem with finding stddef.h
