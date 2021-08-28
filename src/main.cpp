@@ -33,7 +33,9 @@ int main(int argc, char *argv[]) {
   signal(SIGTERM, signal_handler);
 
 #ifdef LOGGER_ADD_SYSLOG_SINK
-  openlog(argv[0], LOG_CONS | LOG_PID, 0);
+  const char *program_name = strrchr(argv[0], '/');
+  program_name = program_name ? program_name + 1 /*ignore slash*/ : argv[0];
+  openlog(program_name, LOG_CONS | LOG_PID, 0);
   LOGGER_ADD_SYSLOG_SINK(log_syslog_format,
                          LogFailure | LogError | LogWarning | LogInfo);
 #endif
