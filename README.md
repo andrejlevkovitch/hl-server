@@ -52,3 +52,8 @@ then you need also set incude directory:
 -stdlib=libc++
 -I${LLVM_INSTALL_PREFIX}/include/c++/v1
 ```
+
+## Other systems
+
+The server should works with other *nix systems without problems, but it doesn't
+tested. For non-unix systems you can try `boost` branch
