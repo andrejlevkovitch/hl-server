@@ -1,12 +1,10 @@
 # hl-server
 
-Fast asynchronous server for buffers tokenizing.
-Nowadays it support tokenizing `c` and `cpp` buffers (based on `clang`).
-As example here realized `polyndrom` tokenizing for buffers
+Fast asynchronous server for c/cpp code tokenization, bases on `clang`.
 
-__supported version protocols__: v1, v1.1
+__supported version protocols__: v1.1
 
-See [test hl client](test/simple_hl_client)
+See [test hl client](example/simple_hl_client)
 
 See [vim-hl-client](https://github.com/andrejlevkovitch/vim-hl-client)
 
