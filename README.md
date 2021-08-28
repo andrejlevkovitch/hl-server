@@ -12,9 +12,9 @@ See [vim-hl-client](https://github.com/andrejlevkovitch/vim-hl-client)
 
 ## Requirements
 
-- `c++` compiler with support `17` standard
+- `libclang-dev` and `llvm-dev`
 
-- `boost`
+- `c++` compiler with support `11` standard
 
 - [nlohmann-json](https://github.com/nlohmann/json) - upload automaticly
 

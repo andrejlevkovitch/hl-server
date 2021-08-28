@@ -4,3 +4,9 @@
 [submodule "third-party/json-schema-validator"]
 	path = third-party/json-schema-validator
 	url = https://github.com/pboettch/json-schema-validator.git
+[submodule "third-party/c_logs"]
+	path = third-party/c_logs
+	url = https://github.com/andrejlevkovitch/c_logs.git
+[submodule "third-party/c_arg_parser"]
+	path = third-party/c_arg_parser
+	url = https://github.com/andrejlevkovitch/c_arg_parser.git

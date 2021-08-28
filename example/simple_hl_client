@@ -12,12 +12,12 @@ local socket_factory = require("socket")
 local cjson = require("cjson")
 
 local function main()
-  local host = arg[1]
-  local port = arg[2]
-  local additional_info_filename = arg[3]
+  local host = "localhost"
+  local port = arg[1]
+  local additional_info_filename = arg[2]
 
   if host == nil or port == nil then
-    error("you must set host as first argument and port as second")
+    error("you must set port as first argument")
   end
 
   local additional_info = ""
