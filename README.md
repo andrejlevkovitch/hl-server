@@ -28,6 +28,17 @@ cmake ..
 cmake --build . -- -j4
 ```
 
+__NOTE__ if you have several llvm packages you can set version that you want to
+use by setting `USE_LLVM_VERSION` variable:
+
+```sh
+cmake -DUSE_LLVM_VERSION=11.1 ..
+```
+
+Also it can be required if you have several llvm packages with different versions,
+but only one `libclang` package. So in this case you can get error about not
+founded `Clang_LIBRARY`. You can fix that by setting version of llvm package
+same as version of libclang package
 
 ## Bugs
 

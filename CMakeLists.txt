@@ -10,7 +10,7 @@ include(cmake/build.cmake)
 
 add_subdirectory(third-party)
 
-find_package(LLVM REQUIRED)
+find_package(LLVM ${USE_LLVM_VERSION} REQUIRED)
 
 find_library(Clang_LIBRARY NAMES clang HINTS ${LLVM_LIBRARY_DIRS})
 
