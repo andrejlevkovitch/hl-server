@@ -71,6 +71,8 @@ int main(int argc, char *argv[]) {
   int         reuse_addr = 1;
   timeval     rcv_timeout;
 
+  std::list<pid_t> children;
+
 
   result = ARG_PARSER_PARSE(parser, argc, argv, false, false, &err);
   if (ARG_PARSER_GET_BOOL(parser, "help", need_help) && need_help) {
@@ -169,6 +171,7 @@ int main(int argc, char *argv[]) {
       continue;
     } else if (pid > 0) {
       LOG_INFO("start child process: %d", pid);
+      children.emplace_back(pid);
       continue;
     }
 
@@ -273,6 +276,9 @@ int main(int argc, char *argv[]) {
   signal(SIGTERM, SIG_DFL);
 
   LOG_DEBUG("try close all children");
+  for (pid_t child : children) {
+    kill(child, SIGTERM);
+  }
   while (true) {
     result = wait(NULL);
     if (result < 0 && errno == ECHILD) {
