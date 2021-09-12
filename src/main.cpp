@@ -192,7 +192,7 @@ int main(int argc, char *argv[]) {
     int  count  = 0;
     uint offset = 0;
     char buf[BUF_SIZE];
-    while (true) {
+    while (done == false) {
       if (offset == sizeof(buf) - 1) {
         LOG_WARNING(
             "ignore %.1fKb of data, looks like you send very large files",
