@@ -26,7 +26,7 @@ RUN apt-get update -y && \
     echo "llvm_resource_dir=\$(ls -d /usr/lib/llvm-$LLVM_VERSION/lib/clang/* | tail -n 1)" >> /entrypoint.sh && \
     echo "cp -rf \$llvm_resource_dir /new-root/tmp/llvm_resource_dir" >> /entrypoint.sh && \
     echo "hl-server --root=/new-root --flag=-resource-dir=/tmp/llvm_resource_dir \$@" >> /entrypoint.sh && \
-    echo "rm -f /new-root/tmp/llvm_resource_dir" >> /entrypoint.sh
+    echo "rm -rf /new-root/tmp/llvm_resource_dir" >> /entrypoint.sh
 
 EXPOSE 53827
 ENTRYPOINT ["/bin/bash", "/entrypoint.sh"]
