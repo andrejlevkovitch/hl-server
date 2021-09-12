@@ -10,7 +10,14 @@ include(cmake/build.cmake)
 
 add_subdirectory(third-party)
 
-find_package(LLVM ${USE_LLVM_VERSION} REQUIRED)
+if(DEFINED LLVM_BASE_DIR)
+  message(STATUS "LLVM_BASE_DIR: ${LLVM_BASE_DIR}")
+  set(LLVM_LIBRARY_DIRS ${LLVM_BASE_DIR}/lib)
+  set(LLVM_INCLUDE_DIRS ${LLVM_BASE_DIR}/include)
+else()
+  message(STATUS "LLVM_DIR not set, try to use LLVM config")
+  find_package(LLVM ${USE_LLVM_VERSION} REQUIRED)
+endif()
 
 find_library(Clang_LIBRARY NAMES clang HINTS ${LLVM_LIBRARY_DIRS})
 
@@ -35,8 +42,13 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   )
 
 
-# generate default flags for clang tokenizer
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gen/default_cpp_flags.cmake.h ${CMAKE_CURRENT_BINARY_DIR}/gen/default_cpp_flags.h)
-
 # generate version header
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gen/version.cmake.h ${CMAKE_CURRENT_BINARY_DIR}/gen/version.h)
+
+
+# installation
+include(GNUInstallDirs)
+install(TARGETS hl-server nlohmann_json nlohmann_json_schema_validator
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

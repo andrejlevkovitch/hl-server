@@ -1,7 +1,6 @@
 #include "c_arg_parser/arg_parser.h"
 #include "c_logs/log.h"
 #include "clang_tokenize.hpp"
-#include "gen/default_cpp_flags.h"
 #include "gen/version.h"
 #include "rr_schemes.h"
 #include "token.hpp"
@@ -26,7 +25,8 @@
 std::atomic_bool done{false};
 static void      signal_handler(int val);
 
-static std::string process(const char *data);
+static std::string
+process(const char *data, int default_flags_count, const char *default_flags[]);
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, signal_handler);
@@ -54,14 +54,19 @@ int main(int argc, char *argv[]) {
                        "print more logs to stderr",
                        false);
   ARG_PARSER_ADD_INTD(parser, "port", 'p', "port for listener", 53827);
+  ARG_PARSER_ADD_STR(parser, "root", 0, "set root direcotry", false);
+  ARG_PARSER_ADD_STR(parser, "flag", 0, "default compilation flags", false);
 
 
-  char *err          = nullptr;
-  int   result       = 0;
-  bool  need_help    = false;
-  bool  need_version = false;
-  bool  need_verbose = false;
-  int   port         = 0;
+  char *       err           = nullptr;
+  int          result        = 0;
+  bool         need_help     = false;
+  bool         need_version  = false;
+  bool         need_verbose  = false;
+  int          port          = 0;
+  const char * root          = NULL;
+  int          flag_count    = 0;
+  const char **default_flags = NULL;
 
   int         sock = -1;
   sockaddr_in addr;
@@ -95,6 +100,29 @@ int main(int argc, char *argv[]) {
 
   ARG_PARSER_GET_INT(parser, "port", port);
   LOG_INFO("uses port: %d", port);
+
+  if (ARG_PARSER_GET_STR(parser, "root", root) == 1) {
+    LOG_INFO("change root dir to: %s", root);
+    if (chroot(root) == -1) {
+      LOG_ERROR("can't change root dir: %s", strerror(errno));
+    }
+  }
+
+  flag_count = arg_parser_count(parser, "flag");
+  if (flag_count > 0) {
+    default_flags = new const char *[flag_count];
+    if (arg_parser_get_args(parser,
+                            "flag",
+                            ArgString,
+                            default_flags,
+                            flag_count) != flag_count) {
+      LOG_FAILURE("can't parse flag values");
+    }
+
+    for (int i = 0; i < flag_count; ++i) {
+      LOG_DEBUG("default flag: %s", default_flags[i]);
+    }
+  }
 
 
   // resolve address
@@ -243,7 +271,7 @@ int main(int argc, char *argv[]) {
 
 
       // process
-      std::string response = process(start);
+      std::string response = process(start, flag_count, default_flags);
       count                = write(in_sock, response.c_str(), response.size());
       if (count < 0) {
         LOG_ERROR("failure during writting response: %s", strerror(errno));
@@ -266,7 +294,11 @@ int main(int argc, char *argv[]) {
     LOG_INFO("close connection from port: %d", ntohs(in_addr.sin_port));
     close(in_sock);
 
-    arg_parser_dispose(parser); // just for convention
+    // just for convention
+    if (default_flags) {
+      delete[] default_flags;
+    }
+    arg_parser_dispose(parser);
     return EXIT_SUCCESS;
   }
 
@@ -291,6 +323,10 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  if (default_flags) {
+    delete[] default_flags;
+  }
+
   close(sock);
   arg_parser_dispose(parser);
 
@@ -304,6 +340,9 @@ Failure:
   }
   if (err) {
     free(err);
+  }
+  if (default_flags) {
+    delete[] default_flags;
   }
   arg_parser_dispose(parser);
   LOGGER_SHUTDOWN();
@@ -377,7 +416,9 @@ to_argv(const std::list<std::string> &string_list) {
 #define ERROR_MESSAGE_TAG   "error_message"
 #define TOKENS_TAG          "tokens"
 
-static std::string process(const char *data) {
+static std::string process(const char *data,
+                           int         default_flags_count,
+                           const char *default_flags[]) {
   using nlohmann::json;
   using nlohmann::json_schema::json_validator;
 
@@ -460,8 +501,12 @@ static std::string process(const char *data) {
 
 
   // tokenization
-  args   = split(c_default_flags + additional_info);
-  argv   = to_argv(args);
+  args = split(additional_info);
+  argv = to_argv(args);
+  for (int i = 0; i < default_flags_count; ++i) {
+    argv.push_back(default_flags[i]);
+  }
+
   tokens = hl::clang_tokenize(filename, argv.size(), argv.data(), err);
   if (err.empty() == false) {
     LOG_ERROR("error from tokenizer: %s", err.c_str());
