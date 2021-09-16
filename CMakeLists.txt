@@ -48,7 +48,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gen/version.cmake.h ${CMAKE_CURRENT_B
 
 # installation
 include(GNUInstallDirs)
-install(TARGETS hl-server nlohmann_json nlohmann_json_schema_validator
+install(TARGETS hl-server
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
