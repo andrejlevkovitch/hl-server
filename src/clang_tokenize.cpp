@@ -45,7 +45,7 @@ hl::token_list clang_tokenize(const char * filename,
     goto Finish;
   }
 
-  for (uint i = 0; i < clang_getNumDiagnostics(translation_unit); ++i) {
+  for (unsigned i = 0; i < clang_getNumDiagnostics(translation_unit); ++i) {
     CXDiagnostic diag = clang_getDiagnostic(translation_unit, i);
 
     switch (clang_getDiagnosticSeverity(diag)) {

@@ -217,9 +217,9 @@ int main(int argc, char *argv[]) {
     }
 
 
-    int  count  = 0;
-    uint offset = 0;
-    char buf[BUF_SIZE];
+    int      count  = 0;
+    unsigned offset = 0;
+    char     buf[BUF_SIZE];
     while (done == false) {
       if (offset == sizeof(buf) - 1) {
         LOG_WARNING(
