@@ -2,18 +2,23 @@
 #include "c_logs/log.h"
 #include "clang_tokenize.hpp"
 #include "gen/version.h"
+#include "gotokenizer.h"
 #include "rr_schemes.h"
 #include "token.hpp"
 #include <arpa/inet.h>
 #include <atomic>
 #include <csignal>
-#include <iostream>
+#include <cstring>
+#include <exception>
 #include <list>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
+#include <sys/poll.h>
 #include <sys/socket.h>
-#include <sys/wait.h>
 #include <unistd.h>
+#include <vector>
 
 
 #define ADDRESS   "localhost"
@@ -27,6 +32,15 @@ static void      signal_handler(int val);
 
 static std::string
 process(const char *data, int default_flags_count, const char *default_flags[]);
+
+
+struct connection {
+  int         sock;
+  sockaddr_in addr;
+  size_t      offset;
+  char        buf[BUF_SIZE];
+};
+
 
 int main(int argc, char *argv[]) {
   signal(SIGINT, signal_handler);
@@ -68,15 +82,12 @@ int main(int argc, char *argv[]) {
   int          flag_count    = 0;
   const char **default_flags = NULL;
 
-  int         sock = -1;
+  int         acceptor = -1;
   sockaddr_in addr;
-  int         in_sock = -1;
-  sockaddr_in in_addr;
-  socklen_t   sock_len   = 0;
   int         reuse_addr = 1;
-  timeval     rcv_timeout;
 
-  std::list<pid_t> children;
+  std::vector<pollfd>     socks;
+  std::vector<connection> connections;
 
 
   result = ARG_PARSER_PARSE(parser, argc, argv, false, false, &err);
@@ -136,13 +147,13 @@ int main(int argc, char *argv[]) {
   }
 
   // open socket
-  sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (sock < 0) {
+  acceptor = socket(AF_INET, SOCK_STREAM, 0);
+  if (acceptor < 0) {
     LOG_ERROR("can't open listener: %s", strerror(errno));
     goto Failure;
   }
 
-  result = setsockopt(sock,
+  result = setsockopt(acceptor,
                       SOL_SOCKET,
                       SO_REUSEADDR,
                       &reuse_addr,
@@ -152,108 +163,131 @@ int main(int argc, char *argv[]) {
     goto Failure;
   }
 
-  rcv_timeout.tv_sec  = 1;
-  rcv_timeout.tv_usec = 0;
-
-  result = setsockopt(sock,
-                      SOL_SOCKET,
-                      SO_RCVTIMEO,
-                      &rcv_timeout,
-                      sizeof(rcv_timeout));
-  if (result != 0) {
-    LOG_ERROR("can't set timeout for listener");
-    goto Failure;
-  }
 
   // bind
-  result = bind(sock, (struct sockaddr *)&addr, sizeof(addr));
+  result = bind(acceptor, (struct sockaddr *)&addr, sizeof(addr));
   if (result != 0) {
     LOG_ERROR("can't bind listener: %s", strerror(errno));
     goto Failure;
   }
 
   // listen
-  result = listen(sock, BACKLOG);
+  result = listen(acceptor, BACKLOG);
   if (result != 0) {
     LOG_ERROR("can't listened: %s", strerror(errno));
     goto Failure;
   }
 
+
+  socks.reserve(8);
+  connections.reserve(8);
+
+
   while (done == false) {
+    socks.clear();
+
+    // XXX first descriptor in poll is acceptor, always
+    pollfd pfd;
+    pfd.fd      = acceptor;
+    pfd.events  = POLLIN | POLLPRI | POLLERR;
+    pfd.revents = 0;
+    socks.push_back(pfd);
+
+
+    for (const connection &con : connections) {
+      pfd.fd      = con.sock;
+      pfd.events  = POLLIN | POLLPRI | POLLRDHUP | POLLHUP | POLLERR;
+      pfd.revents = 0;
+      socks.push_back(pfd);
+    }
+
+
+    result = poll(socks.data(), socks.size(), 1000 /*1sec*/);
+
+    if (result < 0) {
+      LOG_ERROR("poll error: %s", strerror(errno));
+    } else if (result == 0) {
+      continue;
+    }
+
+
     // accept new connection
-    sock_len = sizeof(in_addr);
-    in_sock  = accept(sock, (struct sockaddr *)&in_addr, &sock_len);
-    if (in_sock < 0 && errno == EAGAIN) {
-      continue;
-    } else if (in_sock < 0) {
-      LOG_ERROR("can't accept incomming socket: %s", strerror(errno));
-      continue;
-    }
-
-    LOG_INFO("accepted connection from port: %d", ntohs(in_addr.sin_port));
-
-    pid_t pid = fork();
-    if (pid == -1) {
-      close(in_sock);
-      LOG_ERROR("error during fork: %s", strerror(errno));
-      continue;
-    } else if (pid > 0) {
-      LOG_INFO("start child process: %d", pid);
-      children.emplace_back(pid);
-      continue;
-    }
-
-    // child
-    rcv_timeout.tv_sec  = 1;
-    rcv_timeout.tv_usec = 0;
-
-    result = setsockopt(in_sock,
-                        SOL_SOCKET,
-                        SO_RCVTIMEO,
-                        &rcv_timeout,
-                        sizeof(rcv_timeout));
-    if (result != 0) {
-      LOG_ERROR("can't set timeout for input socket");
-    }
-
-
-    int      count  = 0;
-    unsigned offset = 0;
-    char     buf[BUF_SIZE];
-    while (done == false) {
-      if (offset == sizeof(buf) - 1) {
-        LOG_WARNING(
-            "ignore %.1fKb of data, looks like you send very large files",
-            offset / 1024.);
-        offset = 0;
+    if (socks[0].revents != 0) {
+      if (socks[0].revents & POLLERR) {
+        LOG_ERROR("unexpected acceptor error");
+        goto Failure;
       }
 
-      count = read(in_sock, buf + offset, sizeof(buf) - offset - 1);
-      if (count < 0 && errno == EAGAIN) {
+      socks[0].revents = 0;
+
+
+      memset(&addr, 0, sizeof(addr));
+      socklen_t sock_len = sizeof(addr);
+      int       sock = accept(acceptor, (struct sockaddr *)&addr, &sock_len);
+      if (sock < 0) {
+        LOG_ERROR("can't accept incomming socket: %s", strerror(errno));
+        goto SkipAccepting;
+      }
+
+      // append connection
+      connections.emplace_back(connection{sock, addr, 0, ""});
+
+      LOG_INFO("accepted connection from %d", ntohs(addr.sin_port));
+    }
+  SkipAccepting:
+
+
+    // socket reading
+    for (size_t i = 1; i < socks.size(); ++i) {
+      assert(i - 1 < connections.size());
+
+      connection &con      = connections[i - 1];
+      int         con_port = ntohs(con.addr.sin_port);
+
+      if (socks[i].revents == 0) {
         continue;
-      } else if (count < 0 && errno != EAGAIN) {
-        LOG_ERROR("read error: %s", strerror(errno));
-        break;
+      } else if (socks[i].revents & (POLLRDHUP | POLLHUP)) {
+        // remove later
+        LOG_INFO("connection broken from %d", con_port);
+        continue;
+      } else if (socks[i].revents & POLLERR) {
+        // remove later
+        LOG_ERROR("unexpected connection error from %d", con_port);
+        continue;
+      }
+      // otherwise we have data for reading
+
+      socks[i].revents = 0;
+
+
+      int count =
+          read(con.sock, con.buf + con.offset, sizeof(con.buf) - con.offset);
+      if (count < 0) {
+        // remove later
+        socks[i].revents = POLLERR;
+        LOG_ERROR("reading error from %d: %s", con_port, strerror(errno))
+        continue;
       } else if (count == 0) {
-        LOG_WARNING("eof from connection with port: %d",
-                    ntohs(in_addr.sin_port));
-        break;
+        // remove later
+        socks[i].revents = POLLERR;
+        continue;
       }
 
-      LOG_DEBUG("readen: %.1fKb", count / 1024.);
+      LOG_DEBUG("readen from %d: %.1fKb", con_port, count / 1024.);
 
-      offset += count;
-      buf[offset] = '\0';
-
-      if (buf[offset - 1] != DELIMITER) { // need more info
+      con.offset += count;
+      if (con.buf[con.offset - 1] != DELIMITER) {
         LOG_DEBUG("readen not enough data");
 
-        char *found = strrchr(buf, DELIMITER);
+        char *found = strrchr(con.buf, DELIMITER);
         if (found) {
           LOG_DEBUG("ignore old data: %.1fKb",
-                    std::distance(buf, found) / 1024.);
-          strcpy(buf, found);
-          offset = strlen(buf);
+                    std::distance(con.buf, found) / 1024.);
+          strcpy(con.buf, found);
+          con.offset = strlen(con.buf);
+        } else if (con.offset >= sizeof(con.buf)) {
+          LOG_WARNING("too big data, can't store in internal buffer, skip it");
+          con.offset = 0;
         }
 
         continue;
@@ -261,45 +295,71 @@ int main(int argc, char *argv[]) {
 
 
       // get latest data
-      buf[offset - 1] = '\0'; // need for ignore latest delimiter
-      char *start     = strrchr(buf, DELIMITER);
-      start           = start ? start : buf;
+      char delim              = DELIMITER;
+      con.buf[con.offset - 1] = '\0'; // need for ignore latest delimiter
+      char *data              = strrchr(con.buf, DELIMITER);
+      data                    = data ? data : con.buf;
 
-      LOG_DEBUG_IF(buf != start,
-                   "ignore old data: %.1fKb",
-                   std::distance(buf, start) / 1024.);
+      LOG_DEBUG_IF(con.buf != data,
+                   "ignore old data from %d: %.1fKb",
+                   con_port,
+                   std::distance(con.buf, data) / 1024.);
 
 
       // process
-      std::string response = process(start, flag_count, default_flags);
-      count                = write(in_sock, response.c_str(), response.size());
+      std::string response = process(data, flag_count, default_flags);
+
+
+      // switch on cork option
+      int cork = 1;
+      setsockopt(con.sock, IPPROTO_TCP, TCP_CORK, &cork, sizeof(cork));
+
+      count = write(con.sock, response.c_str(), response.size());
       if (count < 0) {
-        LOG_ERROR("failure during writting response: %s", strerror(errno));
+        // remove later
+        socks[i].revents = POLLERR;
+        LOG_ERROR("failure during writting response to %d: %s",
+                  con_port,
+                  strerror(errno));
+        continue;
       } else {
         LOG_DEBUG("written: %.1fKb", count / 1024.);
       }
 
-      char delim = DELIMITER;
-      count      = write(in_sock, &delim, 1);
+      count = write(con.sock, &delim, 1);
       if (count < 0) {
-        LOG_ERROR("failure during writing delimiter: %s", strerror(errno));
+        // remove later
+        socks[i].revents = POLLERR;
+        LOG_ERROR("failure during writing delimiter to %d: %s",
+                  con_port,
+                  strerror(errno));
+        continue;
       }
 
+      // switch off cork option
+      cork = 0;
+      setsockopt(con.sock, IPPROTO_TCP, TCP_CORK, &cork, sizeof(cork));
 
-      // clear buf
-      offset = 0;
+      // clear buffer
+      con.offset = 0;
     }
 
-    // close input sock
-    LOG_INFO("close connection from port: %d", ntohs(in_addr.sin_port));
-    close(in_sock);
 
-    // just for convention
-    if (default_flags) {
-      delete[] default_flags;
-    }
-    arg_parser_dispose(parser);
-    return EXIT_SUCCESS;
+    // remove all closed and error connections
+    size_t counter = 0;
+    auto   new_end = std::remove_if(
+        connections.begin(),
+        connections.end(),
+        [&counter, &socks](const connection &con) {
+          ++counter;
+          if (counter < socks.size() && socks[counter].revents != 0) {
+            LOG_INFO("closed connection from %d", ntohs(con.addr.sin_port));
+            close(con.sock);
+            return true;
+          }
+          return false;
+        });
+    connections.erase(new_end, connections.end());
   }
 
 
@@ -307,27 +367,17 @@ int main(int argc, char *argv[]) {
   signal(SIGINT, SIG_DFL);
   signal(SIGTERM, SIG_DFL);
 
-  LOG_DEBUG("try close all children");
-  for (pid_t child : children) {
-    kill(child, SIGTERM);
+
+  for (connection &con : connections) {
+    close(con.sock);
   }
-  while (true) {
-    result = wait(NULL);
-    if (result < 0 && errno == ECHILD) {
-      LOG_DEBUG("no more children");
-      break;
-    } else if (result < 0) {
-      LOG_ERROR("error during waiting child: %s", strerror(errno));
-    } else {
-      LOG_INFO("child closed: %d", result);
-    }
-  }
+  close(acceptor);
+
 
   if (default_flags) {
     delete[] default_flags;
   }
 
-  close(sock);
   arg_parser_dispose(parser);
 
   LOG_INFO("finish");
@@ -335,9 +385,13 @@ int main(int argc, char *argv[]) {
   return EXIT_SUCCESS;
 
 Failure:
-  if (sock >= 0) {
-    close(sock);
+  for (connection &con : connections) {
+    close(con.sock);
   }
+  if (acceptor >= 0) {
+    close(acceptor);
+  }
+
   if (err) {
     free(err);
   }
@@ -349,7 +403,7 @@ Failure:
   return EXIT_FAILURE;
 
 NeedVersion:
-  std::cout << c_version << std::endl;
+  printf("%s\n", c_version);
 
   if (err) {
     free(err);
@@ -360,7 +414,7 @@ NeedVersion:
 
 NeedHelp:
   char *usage = arg_parser_usage(parser);
-  std::cout << usage;
+  printf("%s", usage);
   free(usage);
 
   if (err) {
@@ -471,7 +525,7 @@ static std::string process(const char *data,
   jresponse[1][BUF_NAME_TAG] = buf_name;
   jresponse[1][TOKENS_TAG]   = json::object(); // placeholder
 
-  if (buf_type != "cpp" && buf_type != "c") {
+  if (buf_type != "cpp" && buf_type != "c" && buf_type != "go") {
     LOG_WARNING("not supported buffer type: %s", buf_type.c_str());
 
     jresponse[1][RETURN_CODE_TAG]   = 1;
@@ -480,44 +534,88 @@ static std::string process(const char *data,
   }
 
 
-  // create tmp file
-  fd = mkstemp(filename);
-  if (fd < 0) {
-    LOG_ERROR("can't open temporary file: %s", strerror(errno));
+  if (buf_type == "cpp" || buf_type == "c") {
+    // create tmp file
+    fd = mkstemp(filename);
+    if (fd < 0) {
+      LOG_ERROR("can't open temporary file: %s", strerror(errno));
 
-    jresponse[1][RETURN_CODE_TAG]   = 2;
-    jresponse[1][ERROR_MESSAGE_TAG] = "can't open temporary file for buffer";
-    goto Finish;
-  }
+      jresponse[1][RETURN_CODE_TAG]   = 2;
+      jresponse[1][ERROR_MESSAGE_TAG] = "can't open temporary file for buffer";
+      goto Finish;
+    }
 
-  written = write(fd, buf_body.c_str(), buf_body.size());
-  if (written < 0) {
-    LOG_ERROR("can't write buffer to temporary file: %s", strerror(errno));
+    written = write(fd, buf_body.c_str(), buf_body.size());
+    if (written < 0) {
+      LOG_ERROR("can't write buffer to temporary file: %s", strerror(errno));
 
-    jresponse[1][RETURN_CODE_TAG]   = 3;
-    jresponse[1][ERROR_MESSAGE_TAG] = "can't write buffer to temporary file";
-    goto Finish;
-  }
+      jresponse[1][RETURN_CODE_TAG]   = 3;
+      jresponse[1][ERROR_MESSAGE_TAG] = "can't write buffer to temporary file";
+      goto Finish;
+    }
 
 
-  // tokenization
-  args = split(additional_info);
-  argv = to_argv(args);
-  for (int i = 0; i < default_flags_count; ++i) {
-    argv.push_back(default_flags[i]);
-  }
+    // tokenization
+    args = split(additional_info);
+    argv = to_argv(args);
+    for (int i = 0; i < default_flags_count; ++i) {
+      argv.push_back(default_flags[i]);
+    }
 
-  tokens = hl::clang_tokenize(filename, argv.size(), argv.data(), err);
-  if (err.empty() == false) {
-    LOG_ERROR("error from tokenizer: %s", err.c_str());
+    tokens = hl::clang_tokenize(filename, argv.size(), argv.data(), err);
+    if (err.empty() == false) {
+      LOG_ERROR("error from c/cpp tokenizer: %s", err.c_str());
 
-    jresponse[1][RETURN_CODE_TAG]   = 4;
-    jresponse[1][ERROR_MESSAGE_TAG] = "error from tokenizer: " + err;
-    goto Finish;
-  }
+      jresponse[1][RETURN_CODE_TAG]   = 4;
+      jresponse[1][ERROR_MESSAGE_TAG] = "error from tokenizer: " + err;
+      goto Finish;
+    }
 
-  for (const hl::token &token : tokens) {
-    jresponse[1][TOKENS_TAG][token.group].emplace_back(token.pos);
+    for (const hl::token &token : tokens) {
+      jresponse[1][TOKENS_TAG][token.group].emplace_back(token.pos);
+    }
+  } else if (buf_type == "go") {
+    char *out  = NULL;
+    char *msg  = NULL;
+    int   code = 0;
+
+    code = go_tokenize((char *)buf_name.c_str(),
+                       (char *)buf_body.c_str(),
+                       &out,
+                       &msg);
+
+    if (code != 0) {
+      LOG_ERROR("error from go tokenizer: %s", msg)
+
+      jresponse[1][RETURN_CODE_TAG] = 4;
+      jresponse[1][ERROR_MESSAGE_TAG] =
+          "error from tokenizer: " + std::string{msg};
+      free(msg);
+      goto Finish;
+    }
+
+    try {
+      jresponse[1][TOKENS_TAG] = json::parse(out);
+    } catch (std::exception &e) {
+      LOG_ERROR("error during parsing go tokenizer output: %s", e.what());
+
+      jresponse[1][RETURN_CODE_TAG] = 5;
+      jresponse[1][ERROR_MESSAGE_TAG] =
+          "error during parsing go tokenizer output";
+
+      free(out);
+      if (msg) {
+        free(msg);
+      }
+      goto Finish;
+    }
+
+    free(out);
+    if (msg) {
+      LOG_WARNING("warning from go tokenizer: %s", msg)
+
+      free(msg);
+    }
   }
 
 

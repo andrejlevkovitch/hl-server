@@ -10,6 +10,8 @@ include(cmake/build.cmake)
 
 add_subdirectory(third-party)
 
+find_package(Threads REQUIRED)
+
 if(DEFINED LLVM_BASE_DIR)
   message(STATUS "LLVM_BASE_DIR: ${LLVM_BASE_DIR}")
   set(LLVM_LIBRARY_DIRS ${LLVM_BASE_DIR}/lib)
@@ -26,6 +28,13 @@ set(PROJECT_SRC
   src/clang_tokenize.cpp
   )
 
+
+add_custom_target(go_tokenizer ALL
+    COMMAND go build -buildmode c-archive -o ${CMAKE_CURRENT_BINARY_DIR}/gotokenizer.a
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src/go_tokenizer"
+    )
+
+
 add_executable(${PROJECT_NAME} ${PROJECT_SRC})
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_11)
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -33,6 +42,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
   nlohmann_json_schema_validator
   ${Clang_LIBRARY}
   stdc++fs
+  ${CMAKE_CURRENT_BINARY_DIR}/gotokenizer.a
+  Threads::Threads
   )
 target_include_directories(${PROJECT_NAME} PRIVATE
   include
@@ -40,6 +51,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_BINARY_DIR}
   third-party
   )
+add_dependencies(${PROJECT_NAME} go_tokenizer)
 
 
 # generate version header
