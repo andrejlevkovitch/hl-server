@@ -1,6 +1,7 @@
 # hl-server
 
-Fast asynchronous server for c/cpp code tokenization, bases on `clang`.
+Fast asynchronous server for c/cpp and go code tokenization.
+Based on `clang` and `go/ast`.
 
 __supported version protocols__: v1.1
 
@@ -11,6 +12,8 @@ See [vim-hl-client](https://github.com/andrejlevkovitch/vim-hl-client)
 ## Requirements
 
 - `libclang-dev` and `llvm-dev`
+
+- `golang` (min `1.13`)
 
 - `c++` compiler with support `11` standard
 
