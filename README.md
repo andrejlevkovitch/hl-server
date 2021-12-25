@@ -13,7 +13,7 @@ See [vim-hl-client](https://github.com/andrejlevkovitch/vim-hl-client)
 
 - `libclang-dev` and `llvm-dev`
 
-- `golang` (min `1.13`)
+- `golang` min `1.13` (optional, see __Compilation__)
 
 - `c++` compiler with support `11` standard
 
@@ -42,6 +42,13 @@ Also it can be required if you have several llvm packages with different version
 but only one `libclang` package. So in this case you can get error about not
 founded `Clang_LIBRARY`. You can fix that by setting version of llvm package
 same as version of libclang package
+
+__NOTE__ by default go completer is off, so for compile hl-server with go
+highlight support you should reconfigure your cmake with:
+
+```sh
+cmake -DGO_TOKENIZER=ON ..
+```
 
 ## Known issues
 
