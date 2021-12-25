@@ -14,7 +14,7 @@
 #include <netinet/tcp.h>
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
-#include <sys/poll.h>
+#include <poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
