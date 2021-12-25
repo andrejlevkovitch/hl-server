@@ -24,6 +24,7 @@ const (
 	CallExpr
 	TypeRef
 	EnumConstant
+  LabelRef
 )
 
 func (t TokenType) String() string {
@@ -36,6 +37,8 @@ func (t TokenType) String() string {
 		return "TypeRef"
 	case EnumConstant:
 		return "EnumConstant"
+  case LabelRef:
+    return "LabelRef"
 	default:
 		return "Unknown"
 	}
@@ -64,6 +67,16 @@ func (visitor AstVisitor) Visit(node ast.Node) ast.Visitor {
 	group = Unknown
 
 	switch x := node.(type) {
+  case *ast.LabeledStmt:
+    group = LabelRef
+    pos = (*visitor.fset).Position(x.Pos())
+    end = (*visitor.fset).Position(x.Colon)
+  case *ast.BranchStmt:
+    if x.Label != nil {
+      group = LabelRef
+      pos = (*visitor.fset).Position(x.Label.Pos())
+      end = (*visitor.fset).Position(x.Label.End())
+    }
 	case *ast.FuncDecl:
 		group = FunctionDecl
 		pos = (*visitor.fset).Position(x.Name.Pos())
