@@ -2,7 +2,6 @@
 #include "c_logs/log.h"
 #include "clang_tokenize.hpp"
 #include "gen/version.h"
-#include "gotokenizer.h"
 #include "rr_schemes.h"
 #include "token.hpp"
 #include <arpa/inet.h>
@@ -20,6 +19,9 @@
 #include <unistd.h>
 #include <vector>
 
+#ifdef GO_TOKENIZER
+#  include "gotokenizer.h"
+#endif
 
 #define ADDRESS   "localhost"
 #define BACKLOG   SOMAXCONN
@@ -116,9 +118,12 @@ int main(int argc, char *argv[]) {
     LOG_INFO("change root dir to: %s", root);
     if (chroot(root) == -1) {
       LOG_ERROR("can't change root dir: %s", strerror(errno));
+    } else {
+      LOG_DEBUG("root dir changed")
     }
   }
 
+  LOG_DEBUG("parsing flags")
   flag_count = arg_parser_count(parser, "flag");
   if (flag_count > 0) {
     default_flags = new const char *[flag_count];
@@ -134,9 +139,11 @@ int main(int argc, char *argv[]) {
       LOG_DEBUG("default flag: %s", default_flags[i]);
     }
   }
+  LOG_DEBUG("flags parsed")
 
 
   // resolve address
+  LOG_DEBUG("address resolving")
   memset(&addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_port   = htons(port);
@@ -147,6 +154,7 @@ int main(int argc, char *argv[]) {
   }
 
   // open socket
+  LOG_DEBUG("acceptor opening")
   acceptor = socket(AF_INET, SOCK_STREAM, 0);
   if (acceptor < 0) {
     LOG_ERROR("can't open listener: %s", strerror(errno));
@@ -165,6 +173,7 @@ int main(int argc, char *argv[]) {
 
 
   // bind
+  LOG_DEBUG("acceptor binding")
   result = bind(acceptor, (struct sockaddr *)&addr, sizeof(addr));
   if (result != 0) {
     LOG_ERROR("can't bind listener: %s", strerror(errno));
@@ -172,6 +181,7 @@ int main(int argc, char *argv[]) {
   }
 
   // listen
+  LOG_DEBUG("acceptor listen")
   result = listen(acceptor, BACKLOG);
   if (result != 0) {
     LOG_ERROR("can't listened: %s", strerror(errno));
@@ -181,6 +191,9 @@ int main(int argc, char *argv[]) {
 
   socks.reserve(8);
   connections.reserve(8);
+
+
+  LOG_INFO("start")
 
 
   while (done == false) {
@@ -525,14 +538,6 @@ static std::string process(const char *data,
   jresponse[1][BUF_NAME_TAG] = buf_name;
   jresponse[1][TOKENS_TAG]   = json::object(); // placeholder
 
-  if (buf_type != "cpp" && buf_type != "c" && buf_type != "go") {
-    LOG_WARNING("not supported buffer type: %s", buf_type.c_str());
-
-    jresponse[1][RETURN_CODE_TAG]   = 1;
-    jresponse[1][ERROR_MESSAGE_TAG] = "unsupported buffer type: " + buf_type;
-    goto Finish;
-  }
-
 
   if (buf_type == "cpp" || buf_type == "c") {
     // create tmp file
@@ -574,6 +579,7 @@ static std::string process(const char *data,
     for (const hl::token &token : tokens) {
       jresponse[1][TOKENS_TAG][token.group].emplace_back(token.pos);
     }
+#ifdef GO_TOKENIZER
   } else if (buf_type == "go") {
     char *out  = NULL;
     char *msg  = NULL;
@@ -616,6 +622,13 @@ static std::string process(const char *data,
 
       free(msg);
     }
+#endif
+  } else {
+    LOG_WARNING("not supported buffer type: %s", buf_type.c_str());
+
+    jresponse[1][RETURN_CODE_TAG]   = 1;
+    jresponse[1][ERROR_MESSAGE_TAG] = "unsupported buffer type: " + buf_type;
+    goto Finish;
   }
 
 
