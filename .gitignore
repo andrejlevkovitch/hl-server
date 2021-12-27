@@ -2,3 +2,4 @@
 .color_coded
 build*/
 *.swp
+.cache
